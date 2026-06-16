@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from sqlalchemy import Integer, String, ForeignKey, DateTime, Text, create_engine
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
@@ -102,3 +102,9 @@ class ChatAnalysis(Base):
 DB_PATH = Path(__file__).parent.parent / "database.db"
 engine = create_engine(f"sqlite:///{DB_PATH}")
 Base.metadata.create_all(engine)
+
+with Session(engine) as session:
+    test_id = "c05d3d7f-28f8-4277-88cd-bea5ace34c7f"
+    if not session.get(User, test_id):
+        session.add(User(id=test_id, name="测试", password="<PASSWORD>"))
+        session.commit()
