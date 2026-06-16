@@ -101,7 +101,4 @@ class ChatAnalysis(Base):
 
 DB_PATH = Path(__file__).parent.parent / "database.db"
 engine = create_engine(f"sqlite:///{DB_PATH}")
-
-if __name__ == "__main__":
-    Base.metadata.create_all(engine)
-    print("数据库表创建成功。")
+Base.metadata.create_all(engine)
