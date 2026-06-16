@@ -1,0 +1,51 @@
+# Virtual environment
+.venv/
+
+# Environment variables
+.env
+
+# PyCharm project files
+.idea/
+
+# Python cache directories
+__pycache__/
+
+# Python compiled files
+*.pyc
+*.pyo
+*.pyd
+
+# Database files
+*.db
+
+# Audio files
+*.wav
+*.pcm
+
+# Data directory
+data/
+.data/
+
+# Operating System generated files
+.DS_Store
+Thumbs.db
+
+# Dependency management files
+Pipfile.lock
+Pipfile
+poetry.lock
+
+# Editor and IDE files
+.vscode/
+
+# Log files
+*.log
+
+# Temporary files
+*~
+
+# Documentation and compiled files
+*.pdf
+*.docx
+*.exe
+*.dll

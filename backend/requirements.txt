@@ -1,0 +1,15 @@
+aiofiles
+dashscope
+fastapi
+numpy
+openai
+pyaudio
+pydantic
+python-docx
+pydub
+python-multipart
+requests
+sqlalchemy
+uvicorn
+websockets
+xmltodict

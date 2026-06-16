@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+.venv/
+
+# Environment files (contains real secrets)
+.env
+
+# Database
+*.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Build output
+dist/
+dist-ssr/
+*.tar
+*.tar.gz
+
+# Logs
+*.log
+logs/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS
+Desktop.ini
+
+# Data / runtime
+*.wav
+*.pcm
+*.pdf
+*.docx
+
+# Supervisor config (machine-specific paths)
+*.conf

@@ -1,0 +1,33 @@
+.layoutRoot {
+  height: 100vh;
+  width: 100vw;
+  background: linear-gradient(135deg, #f0f5ff 0%, #e6fffb 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.contentBox {
+  width: 70vw;
+  min-width: 600px;
+  max-width: 1000px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow-y: auto;
+  margin: 24px;
+  animation: fadeInUp 0.4s ease-out;
+}
+
+.contentBox::-webkit-scrollbar {
+  width: 5px;
+}
+
+.contentBox::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
