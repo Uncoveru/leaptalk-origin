@@ -22,8 +22,8 @@ async function getSituation() {
   }
 }
 
-async function createDetailedSituation(index) {
-  const url = hostAddr + "/situation/" + index;
+async function createDetailedSituation(index, level = "B1") {
+  const url = hostAddr + "/situation/" + index + "?level=" + encodeURIComponent(level);
   try {
     const response = await fetch(url, {
       method: "GET",

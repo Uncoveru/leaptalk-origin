@@ -7,12 +7,13 @@ import {hostAddr} from "@/config.js";
  * @param {string} situation
  * @returns {Promise<string>}
  */
-async function createChat(userId, mode, situation) {
+async function createChat(userId, mode, situation, level = "B1") {
   const url = `${hostAddr}/chat`;
   const data = {
     user_id: userId,
     mode: mode,
     situation: situation,
+    level: level,
   };
 
   try {
@@ -35,9 +36,9 @@ async function createChat(userId, mode, situation) {
   }
 }
 
-function updateChat(chatId, text, situation) {
+function updateChat(chatId, text, situation, level = "B1") {
   const url = `${hostAddr}/chat`;
-  const requestBody = {chat_id: chatId, text, situation};
+  const requestBody = {chat_id: chatId, text, situation, level};
   const controller = new AbortController();
 
   const eventSource = {

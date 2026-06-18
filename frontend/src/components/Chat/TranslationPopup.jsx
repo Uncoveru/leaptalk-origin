@@ -7,9 +7,9 @@ const { Text } = Typography;
 export function TranslationPopup() {
   const [popup, setPopup] = useState(null); // { x, y, word, data, loading }
   const popupRef = useRef(null);
+  const abortRef = useRef(false);
 
   const handleMouseUp = useCallback(async (e) => {
-    // ignore clicks inside the popup itself
     if (popupRef.current?.contains(e.target)) return;
 
     const selection = window.getSelection();
@@ -22,21 +22,31 @@ export function TranslationPopup() {
 
     const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
-    const x = rect.left + window.scrollX + rect.width / 2;
-    const y = rect.top + window.scrollY - 8;
+    const x = rect.left + rect.width / 2;
+    const y = rect.top - 8;
 
-    setPopup({ x, y, word, data: null, loading: true });
+    abortRef.current = false;
+    setPopup({ x, y, word, data: {}, loading: true });
 
     try {
-      const data = await translateText(word);
-      setPopup((prev) => prev?.word === word ? { ...prev, data, loading: false } : prev);
+      await translateText(word, (partial) => {
+        if (abortRef.current) return;
+        setPopup((prev) =>
+          prev?.word === word
+            ? { ...prev, data: { ...prev.data, ...partial }, loading: false }
+            : prev
+        );
+      });
     } catch {
-      setPopup((prev) => prev?.word === word ? { ...prev, loading: false } : prev);
+      setPopup((prev) =>
+        prev?.word === word ? { ...prev, loading: false } : prev
+      );
     }
   }, []);
 
   const handleMouseDown = useCallback((e) => {
     if (popupRef.current?.contains(e.target)) return;
+    abortRef.current = true;
     setPopup(null);
   }, []);
 
@@ -51,10 +61,13 @@ export function TranslationPopup() {
 
   if (!popup) return null;
 
+  const { data, loading, word, x, y } = popup;
+  const hasAny = data && Object.keys(data).length > 0;
+
   const style = {
     position: "fixed",
-    left: popup.x,
-    top: popup.y,
+    left: x,
+    top: y,
     transform: "translate(-50%, -100%)",
     zIndex: 9999,
     minWidth: 200,
@@ -66,39 +79,43 @@ export function TranslationPopup() {
 
   return (
     <Card ref={popupRef} style={style} bodyStyle={{ padding: "12px 14px" }}>
-      {popup.loading ? (
-        <div style={{ textAlign: "center", padding: "8px 0" }}>
-          <Spin size="small" />
-        </div>
-      ) : popup.data ? (
-        <div>
-          <div style={{ marginBottom: 4 }}>
-            <Text strong style={{ fontSize: 15 }}>{popup.word}</Text>
-            {popup.data.phonetic && (
-              <Text type="secondary" style={{ fontSize: 12, marginLeft: 6 }}>
-                {popup.data.phonetic}
-              </Text>
-            )}
-            {popup.data.pos && (
-              <Text type="secondary" style={{ fontSize: 12, marginLeft: 4, fontStyle: "italic" }}>
-                {popup.data.pos}
-              </Text>
-            )}
-          </div>
-          <Text style={{ fontSize: 14, color: "#1677ff" }}>{popup.data.translation}</Text>
-          {popup.data.example && (
-            <div style={{ marginTop: 6, borderTop: "1px solid #f0f0f0", paddingTop: 6 }}>
-              <Text style={{ fontSize: 12, color: "#595959", display: "block" }}>
-                {popup.data.example}
-              </Text>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {popup.data.example_cn}
-              </Text>
-            </div>
-          )}
-        </div>
+      {/* header: word + phonetic + pos always visible once card opens */}
+      <div style={{ marginBottom: 4, display: "flex", alignItems: "baseline", gap: 4 }}>
+        <Text strong style={{ fontSize: 15 }}>{word}</Text>
+        {data?.phonetic && (
+          <Text type="secondary" style={{ fontSize: 12 }}>{data.phonetic}</Text>
+        )}
+        {data?.pos && (
+          <Text type="secondary" style={{ fontSize: 12, fontStyle: "italic" }}>{data.pos}</Text>
+        )}
+      </div>
+
+      {/* translation */}
+      {data?.translation ? (
+        <Text style={{ fontSize: 14, color: "#1677ff" }}>{data.translation}</Text>
+      ) : loading ? (
+        <Spin size="small" />
       ) : (
         <Text type="secondary" style={{ fontSize: 13 }}>翻译失败，请重试</Text>
+      )}
+
+      {/* example — appears once streamed in */}
+      {data?.example && (
+        <div style={{ marginTop: 6, borderTop: "1px solid #f0f0f0", paddingTop: 6 }}>
+          <Text style={{ fontSize: 12, color: "#595959", display: "block" }}>
+            {data.example}
+          </Text>
+          {data?.example_cn && (
+            <Text type="secondary" style={{ fontSize: 12 }}>{data.example_cn}</Text>
+          )}
+        </div>
+      )}
+
+      {/* spinner while example is still loading */}
+      {!loading && hasAny && !data?.example && (
+        <div style={{ marginTop: 6 }}>
+          <Spin size="small" />
+        </div>
       )}
     </Card>
   );

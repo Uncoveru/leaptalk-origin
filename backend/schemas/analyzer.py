@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class AnalyzeGrammarRequest(BaseModel):
     text: str
+    level: str = "B1"
 
 
 class AnalyzePronunciationResponse(BaseModel):

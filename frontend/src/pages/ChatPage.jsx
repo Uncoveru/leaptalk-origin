@@ -90,7 +90,7 @@ export function ChatPage() {
     lastChatKeyRef.current = runKey;
 
     async function fetchChatId() {
-      const chatId = await createChat(userId, chatInfo.mode, chatInfo.situation);
+      const chatId = await createChat(userId, chatInfo.mode, chatInfo.situation, chatInfo.level || "B1");
       setChatId(chatId);
     }
 
@@ -178,7 +178,7 @@ export function ChatPage() {
     if (currentEventSourceRef.current) {
       currentEventSourceRef.current.close();
     }
-    const es = updateChat(chatId, "Start the conversation.", chatInfo.situation);
+    const es = updateChat(chatId, "Start the conversation.", chatInfo.situation, chatInfo.level || "B1");
     currentEventSourceRef.current = es;
     es.onmessage = (ev) => {
       const d = JSON.parse(ev.data);
@@ -285,10 +285,13 @@ export function ChatPage() {
       // 1. 获取对话回复
       let assistantContent = "";
       let assistantId = null;
+      let resolveAssistantId;
+      const assistantIdPromise = new Promise((resolve) => { resolveAssistantId = resolve; });
+
       if (currentEventSourceRef.current) {
         currentEventSourceRef.current.close();
       }
-      const eventSource = updateChat(chatId, transcript, chatInfo.situation);
+      const eventSource = updateChat(chatId, transcript, chatInfo.situation, chatInfo.level || "B1");
       currentEventSourceRef.current = eventSource;
       eventSource.onmessage = (event) => {
         const data = JSON.parse(event.data);
@@ -311,6 +314,7 @@ export function ChatPage() {
           }
         } else if (data.index === -1 && data.type === "id") {
           assistantId = data.content;
+          resolveAssistantId(assistantId);
         }
       };
       eventSource.onerror = (err) => {
@@ -318,18 +322,20 @@ export function ChatPage() {
         setStreamError(true);
         eventSource.close();
         currentEventSourceRef.current = null;
+        resolveAssistantId(null);
       };
       eventSource.onclose = () => {
         currentEventSourceRef.current = null;
         if (!assistantContent) {
           setStreamError(true);
         }
+        resolveAssistantId(null);
       };
       // 2. 获取分析
       let grammarResult = null;
       let pronResult = null;
       try {
-        grammarResult = await analyzeGrammar(transcript);
+        grammarResult = await analyzeGrammar(transcript, chatInfo.level || "B1");
         setMessages((prev) => {
           const updated = [...prev];
           const oldAnalysis = updated[userIndex].analysis || {};
@@ -340,7 +346,7 @@ export function ChatPage() {
           return updated;
         });
       } catch {
-        grammarResult = { error: "语法分析失败。" };
+        grammarResult = "语法分析失败。";
         setMessages((prev) => {
           const updated = [...prev];
           const oldAnalysis = updated[userIndex].analysis || {};
@@ -381,12 +387,15 @@ export function ChatPage() {
 
       // 4. 上传消息与分析
       try {
-        await saveAnalysis(
-          assistantId,
-          grammarResult,
-          pronResult?.pronAnalysis || "无",
-          pronResult?.pronEvaluation || null,
-        );
+        const resolvedId = await assistantIdPromise;
+        if (resolvedId) {
+          await saveAnalysis(
+            resolvedId,
+            grammarResult,
+            pronResult?.pronAnalysis || "无",
+            pronResult?.pronEvaluation || null,
+          );
+        }
       } catch (e) {
         console.error("保存分析失败", e);
       }

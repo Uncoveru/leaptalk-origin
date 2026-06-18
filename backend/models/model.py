@@ -32,6 +32,7 @@ class Chat(Base):
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
     mode: Mapped[int] = mapped_column(Integer)
+    level: Mapped[str] = mapped_column(String(4), default="B1")
     system_prompt: Mapped[str | None] = mapped_column(Text)
     user_id: Mapped[str] = mapped_column(
         ForeignKey(column="user.id", ondelete="CASCADE")

@@ -40,6 +40,21 @@ def extract_sentences_from_buffer(buffer):
         return sentences[:-1], sentences[-1]  # 最后一段是还没结束的部分
 
 
+def openai_chat_stream_tokens(messages: list[dict]):
+    """Stream raw token chunks without sentence buffering."""
+    client = OpenAI(api_key=openai_api_key, base_url=openai_base_url)
+    completion = client.chat.completions.create(
+        model="deepseek-v4-pro", messages=messages, stream=True,
+        extra_body={"thinking": {"type": "disabled"}},
+    )
+    for chunk in completion:
+        if not getattr(chunk, "choices", None) or not chunk.choices:
+            continue
+        content = chunk.choices[0].delta.content
+        if content:
+            yield content
+
+
 async def openai_chat(message: list[dict], json_output: bool = False) -> dict | str:
     client = AsyncOpenAI(
         api_key=openai_api_key,

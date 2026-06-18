@@ -8,7 +8,8 @@ from .common import MessageAnalysisReport
 class UpdateChatRequest(BaseModel):
     chat_id: str
     text: str
-    situation: str
+    situation: Optional[str] = None
+    level: str = "B1"
 
 
 class GetChatResponse(BaseModel):
@@ -21,3 +22,4 @@ class CreateChatRequest(BaseModel):
     user_id: str
     mode: int
     situation: Optional[str]
+    level: str = "B1"

@@ -1,12 +1,12 @@
 import {hostAddr} from "@/config.js";
 
-async function analyzeGrammar(text) {
+async function analyzeGrammar(text, level = "B1") {
   const response = await fetch(hostAddr + "/analysis/grammar", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({text: text}),
+    body: JSON.stringify({text, level}),
   });
 
   if (!response.ok) {
@@ -82,36 +82,100 @@ async function saveAnalysis(messageId, gramAnalysis, pronAnalysis, pronScore) {
   }
 }
 
-async function translateText(text) {
+async function translateText(text, onUpdate) {
   const response = await fetch(hostAddr + "/translate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text }),
   });
   if (!response.ok) throw new Error("Translation failed");
-  return await response.json();
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+  let buffer = "";
+
+  const fields = ["translation", "phonetic", "pos", "example", "example_cn"];
+  const fieldRegex = (f) => new RegExp(`"${f}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`)
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    const partial = {};
+    for (const f of fields) {
+      const m = fieldRegex(f).exec(buffer);
+      if (m) partial[f] = m[1].replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+    }
+    if (Object.keys(partial).length > 0) onUpdate(partial);
+  }
 }
 
-async function analyzeSummarize(chatId) {
-  const url =
-    hostAddr + `/analysis/summarize?chat_id=${encodeURIComponent(chatId)}`;
+async function analyzeSummarize(chatId, onUpdate) {
+  const url = hostAddr + `/analysis/summarize?chat_id=${encodeURIComponent(chatId)}`;
+
+  const response = await fetch(url, { method: "GET" });
+  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+
+  const fields = ["grammar_analysis", "pronunciation_analysis", "expression_analysis"];
+  let accumulated = "";   // 用于最终解析
+  let currentField = null;
+  let fieldValue = "";
+  let inValue = false;
+  let escaping = false;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value, { stream: true });
+
+    for (const char of chunk) {
+      accumulated += char;
+
+      if (!inValue) {
+        // 检测字段起始标记
+        for (const field of fields) {
+          if (
+            accumulated.endsWith(`"${field}": "`) ||
+            accumulated.endsWith(`"${field}":"`)
+          ) {
+            currentField = field;
+            fieldValue = "";
+            inValue = true;
+            break;
+          }
+        }
+      } else {
+        // 在字段值内部逐字符处理
+        if (escaping) {
+          if (char === "n") fieldValue += "\n";
+          else if (char === '"') fieldValue += '"';
+          else if (char === "\\") fieldValue += "\\";
+          else if (char === "t") fieldValue += "\t";
+          else fieldValue += char;
+          escaping = false;
+          onUpdate({ [currentField]: fieldValue });
+        } else if (char === "\\") {
+          escaping = true;
+        } else if (char === '"') {
+          // 字段值结束
+          inValue = false;
+          currentField = null;
+        } else {
+          fieldValue += char;
+          onUpdate({ [currentField]: fieldValue });
+        }
+      }
+    }
+  }
 
   try {
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching analysis:", error);
-    throw error;
+    return JSON.parse(accumulated);
+  } catch {
+    return null;
   }
 }
 
