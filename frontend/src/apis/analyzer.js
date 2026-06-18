@@ -82,6 +82,16 @@ async function saveAnalysis(messageId, gramAnalysis, pronAnalysis, pronScore) {
   }
 }
 
+async function translateText(text) {
+  const response = await fetch(hostAddr + "/translate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  if (!response.ok) throw new Error("Translation failed");
+  return await response.json();
+}
+
 async function analyzeSummarize(chatId) {
   const url =
     hostAddr + `/analysis/summarize?chat_id=${encodeURIComponent(chatId)}`;
@@ -146,4 +156,4 @@ async function downloadReportDocx(chatId) {
   }
 }
 
-export {analyzeGrammar, analyzePronunciation, saveAnalysis, analyzeSummarize, downloadReportDocx};
+export {analyzeGrammar, analyzePronunciation, saveAnalysis, analyzeSummarize, downloadReportDocx, translateText};

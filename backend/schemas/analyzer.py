@@ -27,3 +27,15 @@ class GlobalAnalysisResponse(BaseModel):
     grammar_analysis: str
     pronunciation_analysis: str
     expression_analysis: str
+
+
+class TranslateRequest(BaseModel):
+    text: str
+
+
+class TranslateResponse(BaseModel):
+    translation: str
+    phonetic: str
+    pos: str
+    example: str
+    example_cn: str
