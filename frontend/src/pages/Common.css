@@ -8,9 +8,9 @@
 }
 
 .contentBox {
-  width: 70vw;
-  min-width: 600px;
-  max-width: 1000px;
+  /* 把原来的 width: 70vw; max-width: 1000px; 删掉或改掉 */
+  width: 100%; /* 自适应父级 Content 的宽度 */
+  max-width: 1000px; /* 确保不超过外层 Content 限制的 800px */
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
@@ -19,7 +19,7 @@
   flex-direction: column;
   gap: 24px;
   overflow-y: auto;
-  margin: 24px;
+  margin: 24px auto; /* 虽然在 flex 居中下 margin auto 作用有限，但保留无害 */
   animation: fadeInUp 0.4s ease-out;
 }
 

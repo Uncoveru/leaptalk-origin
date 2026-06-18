@@ -5,11 +5,12 @@ from io import BytesIO
 
 import aiofiles
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydub import AudioSegment
 from sqlalchemy.orm import Session
 
 from core.config import audio_root
+from core.level import get_level
 from models import engine, Chat, Message, MessageAnalysis, ChatAnalysis
 from prompts.analyzer import (
     prompt_for_analyzer_grammar,
@@ -27,8 +28,8 @@ from schemas.analyzer import (
     TranslateResponse,
 )
 from services.docx_generate import generate_docx_report
-from services.global_analyzer import get_messages_and_analyses, global_analyze
-from services.openai_chat import openai_chat
+from services.global_analyzer import get_messages_and_analyses, global_analyze_stream
+from services.openai_chat import openai_chat, openai_chat_stream_tokens
 from services.xunfei_ise import evaluate
 
 router = APIRouter()
@@ -36,8 +37,9 @@ router = APIRouter()
 
 @router.post("/analysis/grammar")
 async def analyze_grammar(request: AnalyzeGrammarRequest):
+    level_data = get_level(request.level)
     messages = [
-        {"role": "system", "content": prompt_for_analyzer_grammar},
+        {"role": "system", "content": prompt_for_analyzer_grammar(level_data)},
         {"role": "user", "content": request.text},
     ]
     try:
@@ -112,20 +114,21 @@ async def save_analysis(request: AnalysisSaveRequest):
     return {"status": 1, "analysis_id": message_analysis.id}
 
 
-@router.post("/translate", response_model=TranslateResponse)
+@router.post("/translate", response_class=StreamingResponse)
 async def translate(request: TranslateRequest):
     messages = [
         {"role": "system", "content": prompt_for_translate},
         {"role": "user", "content": request.text},
     ]
-    try:
-        result = await openai_chat(messages, json_output=True)
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"翻译服务暂不可用: {e}")
-    return TranslateResponse(**result)
+
+    def generate():
+        for token in openai_chat_stream_tokens(messages):
+            yield token
+
+    return StreamingResponse(content=generate(), media_type="text/plain")
 
 
-@router.get("/analysis/summarize", response_model=GlobalAnalysisResponse)
+@router.get("/analysis/summarize", response_class=StreamingResponse)
 async def analyse_summarize(chat_id: str):
     with Session(engine) as session:
         chat = session.get(Chat, chat_id)
@@ -133,34 +136,55 @@ async def analyse_summarize(chat_id: str):
         if not chat:
             raise HTTPException(status_code=404, detail="Chat not found")
 
+        # 已有缓存，直接以流式返回 JSON 字符串
         if chat.analysis:
-            return GlobalAnalysisResponse(
-                grammar_analysis=chat.analysis.grammar_analysis,
-                pronunciation_analysis=chat.analysis.pronunciation_analysis,
-                expression_analysis=chat.analysis.expression_analysis,
-            )
+            cached = json.dumps({
+                "grammar_analysis": chat.analysis.grammar_analysis,
+                "pronunciation_analysis": chat.analysis.pronunciation_analysis,
+                "expression_analysis": chat.analysis.expression_analysis,
+            }, ensure_ascii=False)
+
+            def yield_cached():
+                yield cached
+
+            return StreamingResponse(content=yield_cached(), media_type="text/plain")
 
         messages_reports = get_messages_and_analyses(chat.id)
+        situation = chat.system_prompt if chat.mode != 1 else "自由对话"
+
+    def generate():
+        full_text = ""
         try:
-            report = await global_analyze(
-                system_prompt=chat.system_prompt if chat.mode != 1 else "自由对话",
+            for token in global_analyze_stream(
+                system_prompt=situation,
                 message_reports=messages_reports,
-            )
+            ):
+                full_text += token
+                yield token
         except Exception as e:
-            raise HTTPException(status_code=502, detail=f"综合分析服务暂不可用: {e}")
+            yield json.dumps({"error": str(e)}, ensure_ascii=False)
+            return
 
-        session.add(
-            ChatAnalysis(
-                chat_id=chat.id,
-                grammar_analysis=report.grammar_analysis,
-                pronunciation_analysis=report.pronunciation_analysis,
-                expression_analysis=report.expression_analysis,
-                report_path=None,
-            )
-        )
-        session.commit()
+        # 流结束后解析并保存
+        try:
+            parsed = json.loads(full_text)
+            with Session(engine) as save_session:
+                chat_obj = save_session.get(Chat, chat_id)
+                if chat_obj and not chat_obj.analysis:
+                    save_session.add(
+                        ChatAnalysis(
+                            chat_id=chat_id,
+                            grammar_analysis=parsed.get("grammar_analysis", ""),
+                            pronunciation_analysis=parsed.get("pronunciation_analysis", ""),
+                            expression_analysis=parsed.get("expression_analysis", ""),
+                            report_path=None,
+                        )
+                    )
+                    save_session.commit()
+        except Exception:
+            pass
 
-        return report
+    return StreamingResponse(content=generate(), media_type="text/plain")
 
 
 @router.get("/analysis/summarize/docx", response_class=FileResponse)

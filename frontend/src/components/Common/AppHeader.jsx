@@ -34,7 +34,7 @@ export function AppHeader() {
       navigate("/chat", {
         state: {
           userId: "c05d3d7f-28f8-4277-88cd-bea5ace34c7f",
-          chatInfo: { mode: 1, situation: "自由对话" },
+          chatInfo: { mode: 1, situation: "自由对话", level: "B1" },
         },
       });
     } else {
@@ -55,6 +55,7 @@ export function AppHeader() {
         onClick={handleMenuClick}
         className="app-header-menu"
       />
+      <div className="app-header-spacer" />
     </Header>
   );
 }
