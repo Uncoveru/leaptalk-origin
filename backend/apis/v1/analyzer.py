@@ -11,13 +11,20 @@ from sqlalchemy.orm import Session
 
 from core.config import audio_root
 from models import engine, Chat, Message, MessageAnalysis, ChatAnalysis
-from prompts.analyzer import *
+from prompts.analyzer import (
+    prompt_for_analyzer_grammar,
+    prompt_for_analyzer_pronunciation,
+    prompt_for_translate,
+    prompt_for_global_analyze,
+)
 from schemas.analyzer import (
     AnalyzeGrammarRequest,
     AnalyzePronunciationResponse,
     AnalyzeGrammarResponse,
     GlobalAnalysisResponse,
     AnalysisSaveRequest,
+    TranslateRequest,
+    TranslateResponse,
 )
 from services.docx_generate import generate_docx_report
 from services.global_analyzer import get_messages_and_analyses, global_analyze
@@ -103,6 +110,19 @@ async def save_analysis(request: AnalysisSaveRequest):
         session.refresh(message_analysis)
 
     return {"status": 1, "analysis_id": message_analysis.id}
+
+
+@router.post("/translate", response_model=TranslateResponse)
+async def translate(request: TranslateRequest):
+    messages = [
+        {"role": "system", "content": prompt_for_translate},
+        {"role": "user", "content": request.text},
+    ]
+    try:
+        result = await openai_chat(messages, json_output=True)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"翻译服务暂不可用: {e}")
+    return TranslateResponse(**result)
 
 
 @router.get("/analysis/summarize", response_model=GlobalAnalysisResponse)

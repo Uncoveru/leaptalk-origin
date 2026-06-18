@@ -3,6 +3,7 @@ import { Flex, Typography } from "antd";
 import { MessageOutlined } from "@ant-design/icons";
 import "./ChatView.css";
 import MessageCard from "@/components/Chat/MessageCard.jsx";
+import TranslationPopup from "@/components/Chat/TranslationPopup.jsx";
 
 const { Text } = Typography;
 
@@ -14,6 +15,8 @@ export function ChatView({ messages }) {
   }, [messages]);
 
   return (
+    <>
+    <TranslationPopup />
     <Flex className="scrollable-content" vertical>
       {messages.length === 0 ? (
         <Flex
@@ -41,6 +44,7 @@ export function ChatView({ messages }) {
         </>
       )}
     </Flex>
+    </>
   );
 }
 
