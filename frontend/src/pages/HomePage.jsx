@@ -1,45 +1,56 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, Layout, Row, Col, Typography } from "antd";
 import { CommentOutlined, FormOutlined, SoundOutlined, BarChartOutlined } from "@ant-design/icons";
 import { AppHeader } from "@/components/Common/AppHeader.jsx";
+import LevelSelectModal from "@/components/Common/LevelSelectModal.jsx";
 import "./Common.css";
 
 const { Content } = Layout;
 const { Title, Paragraph, Text } = Typography;
 
-const features = [
-  {
-    key: "free",
-    icon: <CommentOutlined style={{ fontSize: 40, color: "#1677ff" }} />,
-    title: "自由对话",
-    desc: "与 AI 助教进行自然的英语口语对话，提升日常表达能力",
-    action: "开始对话",
-    onClick: (navigate) =>
-      navigate("/chat", {
-        state: {
-          userId: "c05d3d7f-28f8-4277-88cd-bea5ace34c7f",
-          chatInfo: { mode: 1, situation: "自由对话" },
-        },
-      }),
-  },
-  {
-    key: "scenario",
-    icon: <FormOutlined style={{ fontSize: 40, color: "#52c41a" }} />,
-    title: "情景对话",
-    desc: "在校园、餐厅、面试等真实场景中练习，应对实际交流需求",
-    action: "选择场景",
-    onClick: (navigate) => navigate("/scenario"),
-  },
-];
-
 export default function HomePage() {
   const navigate = useNavigate();
+  const [levelModalOpen, setLevelModalOpen] = useState(false);
+
+  const features = [
+    {
+      key: "free",
+      icon: <CommentOutlined style={{ fontSize: 40, color: "#1677ff" }} />,
+      title: "自由对话",
+      desc: "与 AI 助教进行自然的英语口语对话，提升日常表达能力",
+      action: "开始对话",
+      onClick: () => setLevelModalOpen(true),
+    },
+    {
+      key: "scenario",
+      icon: <FormOutlined style={{ fontSize: 40, color: "#52c41a" }} />,
+      title: "情景对话",
+      desc: "在校园、餐厅、面试等真实场景中练习，应对实际交流需求",
+      action: "选择场景",
+      onClick: () => navigate("/scenario"),
+    },
+  ];
+
+  function handleLevelConfirm(level) {
+    setLevelModalOpen(false);
+    navigate("/chat", {
+      state: {
+        userId: "c05d3d7f-28f8-4277-88cd-bea5ace34c7f",
+        chatInfo: { mode: 1, situation: "自由对话", level },
+      },
+    });
+  }
 
   return (
     <Layout className="layoutRoot">
       <AppHeader />
-      <Content style={{ width: "100%", maxWidth: 900, padding: "0 32px" }}>
+      <LevelSelectModal
+        open={levelModalOpen}
+        onConfirm={handleLevelConfirm}
+        onCancel={() => setLevelModalOpen(false)}
+      />
+      <Content style={{ width: "100%", maxWidth: 1000, padding: "0 32px" }}>
         <div style={{ textAlign: "center", marginBottom: 48, marginTop: 24 }}>
           <Title level={1} style={{ marginBottom: 8, fontSize: 36 }}>
             <span style={{ color: "#1677ff" }}>语跃语伴</span>
@@ -56,7 +67,7 @@ export default function HomePage() {
                 hoverable
                 style={{ height: "100%", borderRadius: 12, textAlign: "center" }}
                 bodyStyle={{ padding: "32px 24px" }}
-                onClick={() => f.onClick(navigate)}
+                onClick={f.onClick}
               >
                 <div style={{ marginBottom: 16 }}>{f.icon}</div>
                 <Title level={3} style={{ marginBottom: 8 }}>

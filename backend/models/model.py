@@ -132,6 +132,10 @@ class Chat(Base):
         Text,
         doc="场景描述文本 —— TODO 将改为 background_prompt，仅存纯场景描述",
     )
+    level: Mapped[str] = mapped_column(
+        String(4), default="B1",
+        doc="CEFR 难度等级: A1 | A2 | B1 | B2 | C1 | C2 —— 控制 LLM 回复的词汇和句式复杂度",
+    )
     user_id: Mapped[str] = mapped_column(
         ForeignKey("user.id", ondelete="CASCADE"),
         doc="所属用户，删用户时级联删除对话",

@@ -31,13 +31,20 @@ export function SummaryPage() {
       try {
         const chatRes = await getChat(chatId);
         setMessages(chatRes.messages || []);
-        const summaryRes = await analyzeSummarize(chatId);
-        setSummary(summaryRes);
       } catch (e) {
-        console.error("获取数据失败", e);
-        setError(e.message || "获取数据失败");
-      } finally {
+        setError(e.message || "获取对话记录失败");
         setLoading(false);
+        return;
+      }
+      setLoading(false);
+
+      try {
+        await analyzeSummarize(chatId, (partial) => {
+          setSummary((prev) => ({ ...prev, ...partial }));
+        });
+      } catch (e) {
+        console.error("获取分析报告失败", e);
+        setError(e.message || "获取分析报告失败");
       }
     }
 
@@ -76,27 +83,19 @@ export function SummaryPage() {
           <Result
             status="warning"
             title="未找到会话信息"
-            extra={
-              <Button type="primary" onClick={onClose}>
-                返回首页
-              </Button>
-            }
+            extra={<Button type="primary" onClick={onClose}>返回首页</Button>}
           />
         ) : loading ? (
           <Flex vertical align="center" justify="center" style={{ padding: 48 }}>
             <Spin size="large" />
-            <Text type="secondary" style={{ marginTop: 16 }}>正在生成分析报告...</Text>
+            <Text type="secondary" style={{ marginTop: 16 }}>加载对话记录...</Text>
           </Flex>
         ) : error ? (
           <Result
             status="error"
             title="加载失败"
             subTitle={error}
-            extra={
-              <Button type="primary" onClick={onClose}>
-                返回首页
-              </Button>
-            }
+            extra={<Button type="primary" onClick={onClose}>返回首页</Button>}
           />
         ) : (
           <>

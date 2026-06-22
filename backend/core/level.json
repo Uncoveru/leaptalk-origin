@@ -1,0 +1,100 @@
+{
+  "difficulty_levels": {
+    "A1": {
+      "id": 1,
+      "cefr_level": "A1",
+      "cn_name": "入门级",
+      "en_name": "Beginner",
+      "mapped_exams": ["小学英语", "初一水平"],
+      "display_desc": "能理解并使用日常用语和基本句型，满足具体的生存需求。",
+      "llm_instructions": {
+        "vocabulary": "使用最高频的500个生存词汇，避免任何生僻词。",
+        "grammar": "仅使用一般现在时和基础主谓宾结构，不使用从句。句子长度控制在5-8个词以内。",
+        "topic_scope": "问候、个人信息、数字、颜色、简单物品等。",
+        "interaction": "如果学生听不懂，可以切换为极简单的单词或使用中文辅助解释。语速要求极慢。"
+      },
+      "tts_config": { "speed": 0.85 },
+      "assessment_config": { "pronunciation_threshold": 60, "grammar_strictness": "low" }
+    },
+    "A2": {
+      "id": 2,
+      "cefr_level": "A2",
+      "cn_name": "基础级",
+      "en_name": "Elementary",
+      "mapped_exams": ["中考英语", "初二/初三水平"],
+      "display_desc": "能进行简单的直接交流，熟悉日常话题的基本表达。",
+      "llm_instructions": {
+        "vocabulary": "使用1500个左右日常基础词汇。",
+        "grammar": "可使用一般过去时、将来时和现在进行时。允许使用and/but/because等基础连词，不使用复杂从句。",
+        "topic_scope": "学校生活、家庭、爱好、购物、天气等。",
+        "interaction": "保持友好和鼓励，对话语速缓慢清晰。"
+      },
+      "tts_config": { "speed": 0.90 },
+      "assessment_config": { "pronunciation_threshold": 70, "grammar_strictness": "low" }
+    },
+    "B1": {
+      "id": 3,
+      "cefr_level": "B1",
+      "cn_name": "进阶级",
+      "en_name": "Intermediate",
+      "mapped_exams": ["高考英语", "CET-4", "PET"],
+      "display_desc": "能就熟悉的话题进行连贯交流，能简单说明观点和计划。",
+      "llm_instructions": {
+        "vocabulary": "使用3000-4000词级别的中阶词汇，开始引入基础词组搭配。",
+        "grammar": "熟练掌握各种基础时态，能正确使用被动语态、定语从句和宾语从句。",
+        "topic_scope": "个人经历、旅行、未来规划、简单社会现象等。",
+        "interaction": "交流自然，能适当追问，引导学生表达完整的观点。"
+      },
+      "tts_config": { "speed": 0.95 },
+      "assessment_config": { "pronunciation_threshold": 75, "grammar_strictness": "medium" }
+    },
+    "B2": {
+      "id": 4,
+      "cefr_level": "B2",
+      "cn_name": "中高级",
+      "en_name": "Upper-Intermediate",
+      "mapped_exams": ["CET-6", "考研英语", "雅思 5.5-6.0", "FCE"],
+      "display_desc": "能与英语母语者进行较流畅的互动，能就广泛话题表达明确观点。",
+      "llm_instructions": {
+        "vocabulary": "使用5000-6000词的中高阶词汇，包含常见习语和固定搭配。",
+        "grammar": "熟练运用非谓语动词、虚拟语气、倒装句等复杂语法，句式具有多样性。",
+        "topic_scope": "教育、科技、环境、职场、抽象概念讨论等。",
+        "interaction": "逻辑清晰，能就学生的回答进行深入探讨或反驳，要求学生给出理由。"
+      },
+      "tts_config": { "speed": 1.00 },
+      "assessment_config": { "pronunciation_threshold": 80, "grammar_strictness": "high" }
+    },
+    "C1": {
+      "id": 5,
+      "cefr_level": "C1",
+      "cn_name": "高级",
+      "en_name": "Advanced",
+      "mapped_exams": ["雅思 6.5-7.5", "托福 90-105", "专四/专八", "CAE"],
+      "display_desc": "能灵活有效地运用语言进行社交、学术和专业交流。",
+      "llm_instructions": {
+        "vocabulary": "使用8000+高阶词汇及学术词汇，表达精准、地道，避免口语化陈词滥调。",
+        "grammar": "语法结构完全掌控，能自如使用长难句、复杂从句嵌套，且不显生硬。",
+        "topic_scope": "全球化、伦理道德、学术研究、复杂社会议题等。",
+        "interaction": "具备高度的语用能力，可使用幽默、反问等高级互动技巧，要求学生进行批判性思考。"
+      },
+      "tts_config": { "speed": 1.05 },
+      "assessment_config": { "pronunciation_threshold": 85, "grammar_strictness": "high" }
+    },
+    "C2": {
+      "id": 6,
+      "cefr_level": "C2",
+      "cn_name": "精通级",
+      "en_name": "Proficiency",
+      "mapped_exams": ["雅思 8.0+", "托福 110+", "母语级", "CPE"],
+      "display_desc": "能轻松理解几乎所有听到和读到的内容，表达极其自然流利。",
+      "llm_instructions": {
+        "vocabulary": "海量词汇储备，包含专业领域术语、文学修辞和罕见的精确表达。",
+        "grammar": "语言运用完全达到母语者灵活度，注重语意连贯而非单一语法正确。",
+        "topic_scope": "无限制，涵盖哲学、艺术、前沿科技及任何深度探讨。",
+        "interaction": "完全拟人化的自然对话，包含隐晦的讽刺、文化梗和复杂的逻辑推演。"
+      },
+      "tts_config": { "speed": 1.10 },
+      "assessment_config": { "pronunciation_threshold": 90, "grammar_strictness": "strict" }
+    }
+  }
+}

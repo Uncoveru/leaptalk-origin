@@ -7,9 +7,10 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from core.level import get_level, DEFAULT_LEVEL
 from models import User, Chat, Message
 from core.database import engine
-from prompts.chat import *
+from prompts.chat import prompt_for_free_chat, prompt_for_situation_chat
 from schemas.chat import (
     UpdateChatRequest,
     GetChatResponse,
@@ -17,7 +18,7 @@ from schemas.chat import (
 )
 from services.dashscope_tts import qwen_tts_stream
 from services.global_analyzer import get_messages_and_analyses
-from services.openai_chat import openai_chat_stream
+from services.openai_chat import openai_chat_stream_tokens, extract_sentences_from_buffer
 
 router = APIRouter()
 
@@ -32,11 +33,9 @@ async def create_chat(request: CreateChatRequest):
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
 
-        chat = Chat(user_id=str(user.id), mode=request.mode)
+        chat = Chat(user_id=str(user.id), mode=request.mode, level=request.level)
         if request.mode == 2 or request.mode == 3:
-            chat.system_prompt = (
-                request.situation
-            )  # 之后需要换为具体情景对话提示词提示词
+            chat.system_prompt = request.situation
         session.add(chat)
         session.commit()
         session.refresh(chat)
@@ -53,18 +52,19 @@ async def update_chat(
     with Session(engine) as session:
         # system
         chat = session.get(Chat, request.chat_id)
+        level_data = get_level(chat.level or DEFAULT_LEVEL)
         if chat.mode == 2 or chat.mode == 3:
             situation = request.situation or chat.system_prompt
             messages.append(
                 {
                     "role": "system",
-                    "content": prompt_for_situation_chat(situation),
+                    "content": prompt_for_situation_chat(situation, level_data),
                 }
             )
         else:
             messages.append(
-                {"role": "system", "content": prompt_for_free_chat()}
-            )  # 自由对话模式
+                {"role": "system", "content": prompt_for_free_chat(level_data)}
+            )
         # user & assistant
         statement = (
             select(Message)
@@ -80,16 +80,25 @@ async def update_chat(
 
     async def generate():
         assistant_text = ""
-        # 流式处理文本和音频
+        sentence_buf = ""
         sentence_index = 0
-        for chunk in openai_chat_stream(messages):
-            assistant_text += chunk
-            yield f"data: {json.dumps({'index': sentence_index,'type': 'text', 'content': chunk})}\n\n"
 
-            for audio_chunk in qwen_tts_stream(chunk):
+        for token in openai_chat_stream_tokens(messages):
+            assistant_text += token
+            sentence_buf += token
+            yield f"data: {json.dumps({'index': sentence_index, 'type': 'text', 'content': token})}\n\n"
+
+            # 检测句子边界，触发 TTS
+            sentences, sentence_buf = extract_sentences_from_buffer(sentence_buf)
+            for sentence in sentences:
+                for audio_chunk in qwen_tts_stream(sentence):
+                    yield f"data: {json.dumps({'index': sentence_index, 'type': 'audio', 'content': audio_chunk})}\n\n"
+                sentence_index += 1
+
+        # 剩余未成句内容触发 TTS
+        if sentence_buf.strip():
+            for audio_chunk in qwen_tts_stream(sentence_buf):
                 yield f"data: {json.dumps({'index': sentence_index, 'type': 'audio', 'content': audio_chunk})}\n\n"
-
-            sentence_index += 1
 
         # 存储消息到数据库
         with Session(engine) as session:

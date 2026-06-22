@@ -4,6 +4,7 @@ import { ArrowLeftOutlined, SwapOutlined, FileTextOutlined } from "@ant-design/i
 
 export function ChatInfoPanel({ chatInfo, onClose, onSummarize, view, onSetView }) {
   const situationText = chatInfo?.situation || "对话";
+  const level = chatInfo?.level || "B1";
 
   return (
     <Flex
@@ -20,6 +21,7 @@ export function ChatInfoPanel({ chatInfo, onClose, onSummarize, view, onSetView 
         <Button icon={<ArrowLeftOutlined />} onClick={onClose} type="text" style={{ flexShrink: 0 }}>
           返回
         </Button>
+        <Tag color="green" style={{ fontSize: 12, padding: "2px 8px" }}>{level}</Tag>
         <Tooltip title={situationText}>
           <Tag
             color="blue"

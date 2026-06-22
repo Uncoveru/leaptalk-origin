@@ -1,13 +1,13 @@
-# 整体分析
+from typing import Generator
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from core.database import engine
 from models import Chat, Message
 from prompts.analyzer import prompt_for_global_analyze
-from schemas.analyzer import GlobalAnalysisResponse
 from schemas.common import MessageAnalysisReport
-from .openai_chat import openai_chat
+from .openai_chat import openai_chat_stream_tokens
 
 
 def get_messages_and_analyses(chat_id: str) -> list[MessageAnalysisReport]:
@@ -18,11 +18,9 @@ def get_messages_and_analyses(chat_id: str) -> list[MessageAnalysisReport]:
         if not chat:
             raise Exception(f"Chat with id {chat_id} does not exist")
 
-        # 获取所有消息
         stmt = select(Message).where(Message.chat_id == chat_id).order_by(Message.index)
         messages = session.scalars(stmt)
 
-        # 获取消息分析
         for message in messages:
             analysis = message.analysis
             if analysis is not None:
@@ -49,10 +47,10 @@ def get_messages_and_analyses(chat_id: str) -> list[MessageAnalysisReport]:
     return reports
 
 
-async def global_analyze(
+def global_analyze_stream(
     system_prompt: str,
     message_reports: list[MessageAnalysisReport],
-) -> GlobalAnalysisResponse:
+) -> Generator[str, None, None]:
     messages = [
         {"role": "system", "content": prompt_for_global_analyze(system_prompt)},
         {
@@ -60,14 +58,5 @@ async def global_analyze(
             "content": "\n".join([str(report) for report in message_reports]),
         },
     ]
-    # 构建消息给大模型分析
-    global_analysis: dict = await openai_chat(messages, json_output=True)
-    global_grammar_analysis = global_analysis.get("grammar_analysis")
-    global_pronunciation_analysis = global_analysis.get("pronunciation_analysis")
-    global_expression_analysis = global_analysis.get("expression_analysis")
-    analysis = GlobalAnalysisResponse(
-        grammar_analysis=global_grammar_analysis,
-        pronunciation_analysis=global_pronunciation_analysis,
-        expression_analysis=global_expression_analysis,
-    )
-    return analysis
+    for token in openai_chat_stream_tokens(messages):
+        yield token
