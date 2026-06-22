@@ -2,7 +2,7 @@
 数据表定义 — PostgreSQL
 对话模型: Chat → Message → MessageAnalysis (逐条评测)
 总结模型: ChatAnalysis (整场对话总结)
-用户模型: User → DifficultyAdjustment (难度调整审计)
+用户模型: User
 """
 
 from uuid_utils import uuid7
@@ -129,11 +129,6 @@ class User(Base):
         cascade="all, delete-orphan",
         doc="用户的所有对话，删用户时级联删除",
     )
-    difficulty_adjustments: Mapped[List["DifficultyAdjustment"]] = relationship(
-        back_populates="user",
-        cascade="all, delete-orphan",
-        doc="难度调整历史记录",
-    )
 
 
 # ============================================================
@@ -162,6 +157,7 @@ class Chat(Base):
     )
     user_id: Mapped[str] = mapped_column(
         ForeignKey("user.id", ondelete="CASCADE"),
+        index=True,
         doc="所属用户，删用户时级联删除对话",
     )
     created: Mapped[datetime] = mapped_column(
@@ -189,6 +185,7 @@ class Chat(Base):
 # ============================================================
 class Message(Base):
     __tablename__ = "message"
+    __table_args__ = (Index("ix_message_chat_index", "chat_id", "index"),)
 
     id: Mapped[str] = mapped_column(
         UUID(as_uuid=False),
@@ -287,65 +284,3 @@ class ChatAnalysis(Base):
     )
 
     chat: Mapped["Chat"] = relationship(back_populates="analysis")
-
-
-# ============================================================
-# DifficultyAdjustment — 难度调整审计日志
-# ============================================================
-class DifficultyAdjustment(Base):
-    """
-    每次 vocabulary_level / grammar_strictness / ... 发生变化时写入一条。
-    支持事后追溯"系统为什么给我调了难度"。
-    """
-
-    __tablename__ = "difficulty_adjustment"
-    __table_args__ = (Index("ix_adj_user_created", "user_id", "created_at"),)
-
-    id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False),
-        primary_key=True,
-        default=lambda: str(uuid7()),
-    )
-    user_id: Mapped[str] = mapped_column(
-        ForeignKey("user.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-        doc="所属用户",
-    )
-    triggered_by: Mapped[str] = mapped_column(
-        String(16),
-        nullable=False,
-        doc="SYSTEM = 系统自动 | MANUAL = 用户手动 | TEST_RESULT = 测试结束触发 | ADMIN = 教师后台",
-    )
-    field: Mapped[str] = mapped_column(
-        String(32),
-        nullable=False,
-        doc="被调整的字段名，如 vocabulary_level / grammar_strictness",
-    )
-    old_value: Mapped[Optional[str]] = mapped_column(
-        String(50),
-        nullable=True,
-        doc="旧值，NULL = 首次设定",
-    )
-    new_value: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False,
-        doc="新值",
-    )
-    confidence: Mapped[Optional[float]] = mapped_column(
-        nullable=True,
-        doc="系统自动调整时的置信度 (0~1)，手动调整为 NULL",
-    )
-    evidence: Mapped[Optional[dict]] = mapped_column(
-        JSONB,
-        nullable=True,
-        doc="调整依据的快照: { sample_size, avg_score, window_days, ci_lower }",
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=lambda: datetime.now(tz=CST),
-        doc="调整发生时间",
-    )
-
-    user: Mapped["User"] = relationship(back_populates="difficulty_adjustments")

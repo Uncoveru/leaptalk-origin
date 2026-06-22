@@ -27,3 +27,6 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+import models  # noqa: E402, F401

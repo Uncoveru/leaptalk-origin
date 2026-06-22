@@ -44,3 +44,6 @@ Desktop.ini
 
 # Supervisor config (machine-specific paths)
 *.conf
+
+# Sandbox / experiments
+sandbox/

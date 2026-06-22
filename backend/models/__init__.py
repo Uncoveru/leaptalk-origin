@@ -4,7 +4,6 @@ from .model import (
     Message,
     MessageAnalysis,
     ChatAnalysis,
-    DifficultyAdjustment,
 )
 
 __all__ = [
@@ -13,5 +12,4 @@ __all__ = [
     "Message",
     "MessageAnalysis",
     "ChatAnalysis",
-    "DifficultyAdjustment",
 ]

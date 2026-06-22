@@ -108,7 +108,7 @@ async def update_chat(
 
         # 存储消息到数据库
         with Session(engine) as session:
-            index = len(messages) - 1
+            index = len(messages) - 2
             m1 = Message(
                 chat_id=request.chat_id, index=index, role="user", content=request.text
             )

@@ -5,13 +5,15 @@ from typing import Literal, overload
 
 from openai import OpenAI, AsyncOpenAI
 
-from core.config import openai_api_key, openai_base_url
+from core.config import openai_api_key, openai_base_url, openai_model
+
+_client = OpenAI(api_key=openai_api_key, base_url=openai_base_url)
+_async_client = AsyncOpenAI(api_key=openai_api_key, base_url=openai_base_url)
 
 
 def openai_chat_stream(messages: Iterable[dict[str, str]]):
-    client = OpenAI(api_key=openai_api_key, base_url=openai_base_url)
-    completion = client.chat.completions.create(
-        model="deepseek-v4-pro",
+    completion = _client.chat.completions.create(
+        model=openai_model,
         messages=messages,  # type: ignore[arg-type]
         stream=True,
         extra_body={"thinking": {"type": "disabled"}},
@@ -36,9 +38,8 @@ def extract_sentences_from_buffer(buffer):
 
 
 def openai_chat_stream_tokens(messages: Iterable[dict[str, str]]):
-    client = OpenAI(api_key=openai_api_key, base_url=openai_base_url)
-    completion = client.chat.completions.create(
-        model="deepseek-v4-pro",
+    completion = _client.chat.completions.create(
+        model=openai_model,
         messages=messages,  # type: ignore[arg-type]
         stream=True,
         extra_body={"thinking": {"type": "disabled"}},
@@ -64,10 +65,9 @@ async def openai_chat(
 
 
 async def openai_chat(messages, json_output=False):
-    client = AsyncOpenAI(api_key=openai_api_key, base_url=openai_base_url)
     if json_output:
-        completion = await client.chat.completions.create(
-            model="deepseek-v4-pro",
+        completion = await _async_client.chat.completions.create(
+            model=openai_model,
             messages=messages,  # type: ignore[arg-type]
             response_format={"type": "json_object"},
             extra_body={"thinking": {"type": "disabled"}},
@@ -75,8 +75,8 @@ async def openai_chat(messages, json_output=False):
         content = completion.choices[0].message.content or "{}"
         return json.loads(content)
     else:
-        completion = await client.chat.completions.create(
-            model="deepseek-v4-pro",
+        completion = await _async_client.chat.completions.create(
+            model=openai_model,
             messages=messages,  # type: ignore[arg-type]
             extra_body={"thinking": {"type": "disabled"}},
         )

@@ -33,25 +33,3 @@ def qwen_tts_file(text: str, file_path: str, file_name: str):
     with open(f"{file_path}/{file_name}.wav", "wb") as f:
         f.write(response.content)
     return f"{file_name}.wav"
-
-
-if __name__ == "__main__":
-    # import time
-    #
-    # import numpy as np
-    # import pyaudio
-    #
-    # p = pyaudio.PyAudio()
-    # stream = p.open(format=pyaudio.paInt16, channels=1, rate=24000, output=True)
-    # text = "Life is a journey, not a destination."
-    # for chunk in qwen_tts_stream(text):
-    #     audio_np = np.frombuffer(chunk, dtype=np.int16)
-    #     stream.write(audio_np.tobytes())
-    # time.sleep(0.8)
-    # stream.stop_stream()
-    # stream.close()
-    # p.terminate()
-    text = "帮助学生清晰了解自身水平，找到改进方向。"
-    file_path_test = "E:/Python/OralPractice/data"
-    file_name = f"tts_{9}"
-    qwen_tts_file(text, file_path_test, file_name)

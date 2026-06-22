@@ -14,6 +14,7 @@ class Settings(BaseSettings):
 
     openai_api_key: str = ""
     openai_base_url: str = "https://api.deepseek.com"
+    openai_model: str = "deepseek-v4-pro"
 
     dashscope_api_key: str = ""
 
@@ -21,7 +22,7 @@ class Settings(BaseSettings):
     xunfei_api_secret: str = ""
     xunfei_api_key: str = ""
 
-    database_url: str = "postgresql://postgres:postgres@localhost:5432/leaptalk"
+    database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/leaptalk"
 
     history_root: Path = PROJECT_ROOT / "data" / "history"
     audio_root: Path = PROJECT_ROOT / "data" / "tmp"
@@ -41,6 +42,7 @@ for _dir in (
 
 openai_api_key = _settings.openai_api_key
 openai_base_url = _settings.openai_base_url
+openai_model = _settings.openai_model
 dashscope_api_key = _settings.dashscope_api_key
 xunfei_appid = _settings.xunfei_appid
 xunfei_api_secret = _settings.xunfei_api_secret
