@@ -10,7 +10,8 @@ from pydub import AudioSegment
 from sqlalchemy.orm import Session
 
 from core.config import audio_root
-from models import engine, Chat, Message, MessageAnalysis, ChatAnalysis
+from models import Chat, Message, MessageAnalysis, ChatAnalysis
+from core.database import engine
 from prompts.analyzer import (
     prompt_for_analyzer_grammar,
     prompt_for_analyzer_pronunciation,

@@ -2,7 +2,8 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from models import engine, Chat, Message
+from core.database import engine
+from models import Chat, Message
 from prompts.analyzer import prompt_for_global_analyze
 from schemas.analyzer import GlobalAnalysisResponse
 from schemas.common import MessageAnalysisReport

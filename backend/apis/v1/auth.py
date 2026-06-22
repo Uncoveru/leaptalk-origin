@@ -2,7 +2,8 @@
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
 
-from models import User, engine
+from models import User
+from core.database import engine
 
 router = APIRouter()
 
@@ -13,11 +14,12 @@ def get_user():
         test_id = "c05d3d7f-28f8-4277-88cd-bea5ace34c7f"
         test = session.get(User, test_id)
         if test is None:
-            test = User(
-                id=test_id,
-                name="测试",
-                password="<PASSWORD>",
-            )
+        test = User(
+            id=test_id,
+            email="test@leaptalk.com",
+            display_name="测试",
+            password_hash="<PLEASE_REPLACE_WITH_HASH>",
+        )
             session.add(test)
             session.commit()
             session.refresh(test)

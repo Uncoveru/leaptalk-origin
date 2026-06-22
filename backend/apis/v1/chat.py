@@ -7,7 +7,8 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from models import User, Chat, Message, engine
+from models import User, Chat, Message
+from core.database import engine
 from prompts.chat import *
 from schemas.chat import (
     UpdateChatRequest,

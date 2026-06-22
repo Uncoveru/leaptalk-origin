@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     xunfei_api_secret: str = ""
     xunfei_api_key: str = ""
 
+    database_url: str = "postgresql://postgres:postgres@localhost:5432/leaptalk"
+
     history_root: Path = PROJECT_ROOT / "data" / "history"
     audio_root: Path = PROJECT_ROOT / "data" / "tmp"
     report_root: Path = PROJECT_ROOT / "data" / "reports"
