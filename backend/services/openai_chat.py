@@ -1,29 +1,25 @@
 import json
 import re
+from collections.abc import Iterable
+from typing import Literal, overload
 
 from openai import OpenAI, AsyncOpenAI
 
 from core.config import openai_api_key, openai_base_url
 
 
-def openai_chat_stream(message: list[dict]):
-    """
-    Stream chat response from OpenAI API.
-    """
-    client = OpenAI(
-        api_key=openai_api_key,
-        base_url=openai_base_url,
-    )
-
+def openai_chat_stream(messages: Iterable[dict[str, str]]):
+    client = OpenAI(api_key=openai_api_key, base_url=openai_base_url)
     completion = client.chat.completions.create(
-        model="deepseek-v4-pro", messages=message, stream=True,
+        model="deepseek-v4-pro",
+        messages=messages,  # type: ignore[arg-type]
+        stream=True,
         extra_body={"thinking": {"type": "disabled"}},
     )
     string_buf = ""
     for chunk in completion:
         if not getattr(chunk, "choices", None) or not chunk.choices:
             continue
-
         content = chunk.choices[0].delta.content
         string_buf += content if content else ""
         sentences, string_buf = extract_sentences_from_buffer(string_buf)
@@ -32,19 +28,19 @@ def openai_chat_stream(message: list[dict]):
 
 
 def extract_sentences_from_buffer(buffer):
-    # 检查有没有完整的句子
     sentences = re.split(r'(?<=[。？！.?!])(?=[”"]?)', buffer)
     if len(sentences) <= 1:
-        return [], buffer  # 还没到句子结束
+        return [], buffer
     else:
-        return sentences[:-1], sentences[-1]  # 最后一段是还没结束的部分
+        return sentences[:-1], sentences[-1]
 
 
-def openai_chat_stream_tokens(messages: list[dict]):
-    """Stream raw token chunks without sentence buffering."""
+def openai_chat_stream_tokens(messages: Iterable[dict[str, str]]):
     client = OpenAI(api_key=openai_api_key, base_url=openai_base_url)
     completion = client.chat.completions.create(
-        model="deepseek-v4-pro", messages=messages, stream=True,
+        model="deepseek-v4-pro",
+        messages=messages,  # type: ignore[arg-type]
+        stream=True,
         extra_body={"thinking": {"type": "disabled"}},
     )
     for chunk in completion:
@@ -55,21 +51,33 @@ def openai_chat_stream_tokens(messages: list[dict]):
             yield content
 
 
-async def openai_chat(message: list[dict], json_output: bool = False) -> dict | str:
-    client = AsyncOpenAI(
-        api_key=openai_api_key,
-        base_url=openai_base_url,
-    )
+@overload
+async def openai_chat(
+    messages: Iterable[dict[str, str]], json_output: Literal[True]
+) -> dict: ...
+
+
+@overload
+async def openai_chat(
+    messages: Iterable[dict[str, str]], json_output: Literal[False] = False
+) -> str: ...
+
+
+async def openai_chat(messages, json_output=False):
+    client = AsyncOpenAI(api_key=openai_api_key, base_url=openai_base_url)
     if json_output:
         completion = await client.chat.completions.create(
-            model="deepseek-v4-pro", messages=message, response_format={"type": "json_object"},
+            model="deepseek-v4-pro",
+            messages=messages,  # type: ignore[arg-type]
+            response_format={"type": "json_object"},
             extra_body={"thinking": {"type": "disabled"}},
         )
-        content = completion.choices[0].message.content
+        content = completion.choices[0].message.content or "{}"
         return json.loads(content)
     else:
         completion = await client.chat.completions.create(
-            model="deepseek-v4-pro", messages=message,
+            model="deepseek-v4-pro",
+            messages=messages,  # type: ignore[arg-type]
             extra_body={"thinking": {"type": "disabled"}},
         )
-        return completion.choices[0].message.content
+        return completion.choices[0].message.content or ""

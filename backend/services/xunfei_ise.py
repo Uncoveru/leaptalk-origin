@@ -147,9 +147,7 @@ async def evaluate(pcm_address: str, text: str) -> dict | None:
     result_dict = result_dict["xml_result"]
     # 临时
     now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    with open(
-        pron_root / f"{now}.json", "w", encoding="utf-8"
-    ) as f:
+    with open(pron_root / f"{now}.json", "w", encoding="utf-8") as f:
         json.dump(result_dict, f, indent=4, ensure_ascii=False)
     return result_dict
 

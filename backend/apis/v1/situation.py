@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 
 from core.level import get_level, DEFAULT_LEVEL
 from core.situation import situations
-from prompts.situation import prompt, prompt_for_detailed_situation
+from prompts.situation import prompt_for_detailed_situation
 from services.openai_chat import openai_chat
 
 router = APIRouter()
@@ -25,7 +25,7 @@ async def create_detailed_situation(index: int, level: str = DEFAULT_LEVEL):
         {"role": "user", "content": prompt_for_detailed_situation(level_data)},
         {
             "role": "user",
-            "content": f'大场景为{situation.get("name_zh")}({situation.get("name_en")}), 描述为{situation.get("description")}',
+            "content": f"大场景为{situation.get('name_zh')}({situation.get('name_en')}), 描述为{situation.get('description')}",
         },
     ]
     try:

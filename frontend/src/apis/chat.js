@@ -33,6 +33,7 @@ async function createChat(userId, mode, situation, level = "B1") {
     return result.chat_id;
   } catch (error) {
     console.error("Create Chat Error:", error);
+    throw error;
   }
 }
 
@@ -144,6 +145,7 @@ async function getChat(chatId) {
     return await response.json();
   } catch (error) {
     console.error("Get Chat Error:", error);
+    throw error;
   }
 }
 

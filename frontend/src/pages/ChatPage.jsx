@@ -64,7 +64,7 @@ export function ChatPage() {
     }
     audioQueueRef.current = [];
     if (audioSourceRef.current) {
-      try { audioSourceRef.current.stop(); } catch {}
+      try { audioSourceRef.current.stop(); } catch { /* AudioContext may already be closed */ }
       audioSourceRef.current = null;
     }
     audioPlayingRef.current = false;
@@ -80,6 +80,13 @@ export function ChatPage() {
   const lastChatKeyRef = useRef("");
 
   useEffect(() => {
+    if (!userId || !chatInfo) {
+      message.warning("请从首页开始对话");
+      navigate("/", { replace: true });
+    }
+  }, [userId, chatInfo, navigate]);
+
+  useEffect(() => {
     if (!userId || !chatInfo) return;
 
     const runKey = `${userId}|${chatInfo.mode}|${chatInfo.situation}`;
@@ -90,8 +97,13 @@ export function ChatPage() {
     lastChatKeyRef.current = runKey;
 
     async function fetchChatId() {
-      const chatId = await createChat(userId, chatInfo.mode, chatInfo.situation, chatInfo.level || "B1");
-      setChatId(chatId);
+      try {
+        const chatId = await createChat(userId, chatInfo.mode, chatInfo.situation, chatInfo.level || "B1");
+        setChatId(chatId);
+      } catch {
+        message.error("创建对话失败，请检查网络后刷新页面重试");
+        setStreamError(true);
+      }
     }
 
     void fetchChatId();
@@ -277,7 +289,6 @@ export function ChatPage() {
         analysis: null,
       };
       const userIndex = messagesLengthRef.current;
-      const assistantIndex = userIndex + 1;
       setMessages((prev) => {
         // ...后续分析结果合并...
         return [...prev, newMessage, {role: "assistant", content: ""}];
@@ -414,6 +425,8 @@ export function ChatPage() {
   const lastTranscriptRef = useRef(transcript);
   const submitTimerRef = useRef(null);
   const isSubmittingRef = useRef(false); // 防止重复提交
+  const onSubmitRef = useRef(onSubmit);
+  useEffect(() => { onSubmitRef.current = onSubmit; }, [onSubmit]);
 
   useEffect(() => {
     if (recordingState === "recording") {
@@ -473,7 +486,7 @@ export function ChatPage() {
         await onStop();
 
         setTimeout(async () => {
-          await onSubmit();
+          await onSubmitRef.current();
           isSubmittingRef.current = false;
         }, 100);
       }
@@ -504,7 +517,7 @@ export function ChatPage() {
   useEffect(() => {
     return () => {
       if (audioSourceRef.current) {
-        try { audioSourceRef.current.stop(); } catch {}
+        try { audioSourceRef.current.stop(); } catch { /* AudioContext may already be closed */ }
         audioSourceRef.current = null;
       }
       if (audioCtxRef.current) {

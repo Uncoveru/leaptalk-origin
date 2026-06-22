@@ -1,10 +1,14 @@
 def prompt_for_free_chat(level: dict | None = None):
-    instr = level["llm_instructions"] if level else {
-        "vocabulary": "使用3000-4000词级别的中阶词汇。",
-        "grammar": "熟练掌握各种基础时态，能正确使用被动语态、定语从句和宾语从句。",
-        "topic_scope": "个人经历、旅行、未来规划、简单社会现象等。",
-        "interaction": "交流自然，能适当追问，引导学生表达完整的观点。",
-    }
+    instr = (
+        level["llm_instructions"]
+        if level
+        else {
+            "vocabulary": "使用3000-4000词级别的中阶词汇。",
+            "grammar": "熟练掌握各种基础时态，能正确使用被动语态、定语从句和宾语从句。",
+            "topic_scope": "个人经历、旅行、未来规划、简单社会现象等。",
+            "interaction": "交流自然，能适当追问，引导学生表达完整的观点。",
+        }
+    )
     return f"""你是一位经验丰富的英语口语教师和对话系统设计师，专注于帮助中国英语学习者提升口语表达能力。
 【语言要求】
 - 词汇：{instr["vocabulary"]}
@@ -30,11 +34,15 @@ def prompt_for_free_chat(level: dict | None = None):
 
 
 def prompt_for_situation_chat(situation: str, level: dict | None = None) -> str:
-    instr = level["llm_instructions"] if level else {
-        "vocabulary": "使用3000-4000词级别的中阶词汇。",
-        "grammar": "熟练掌握各种基础时态，能正确使用被动语态、定语从句和宾语从句。",
-        "interaction": "交流自然，能适当追问，引导学生表达完整的观点。",
-    }
+    instr = (
+        level["llm_instructions"]
+        if level
+        else {
+            "vocabulary": "使用3000-4000词级别的中阶词汇。",
+            "grammar": "熟练掌握各种基础时态，能正确使用被动语态、定语从句和宾语从句。",
+            "interaction": "交流自然，能适当追问，引导学生表达完整的观点。",
+        }
+    )
     return f"""你是一位英语口语训练系统的仿真对话智能体，用于真实语境下的英语口语练习。
 【场景设定】：{situation}
 【语言要求】

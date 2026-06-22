@@ -2,7 +2,6 @@
 import json
 
 from fastapi import APIRouter, HTTPException
-from fastapi.params import Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -18,7 +17,10 @@ from schemas.chat import (
 )
 from services.dashscope_tts import qwen_tts_stream
 from services.global_analyzer import get_messages_and_analyses
-from services.openai_chat import openai_chat_stream_tokens, extract_sentences_from_buffer
+from services.openai_chat import (
+    openai_chat_stream_tokens,
+    extract_sentences_from_buffer,
+)
 
 router = APIRouter()
 
@@ -52,9 +54,13 @@ async def update_chat(
     with Session(engine) as session:
         # system
         chat = session.get(Chat, request.chat_id)
+        if chat is None:
+            raise HTTPException(status_code=404, detail="Chat not found")
+        if request.level != chat.level:
+            chat.level = request.level  # 前端可中途调整对话难度，持久化到 chat 记录
         level_data = get_level(chat.level or DEFAULT_LEVEL)
         if chat.mode == 2 or chat.mode == 3:
-            situation = request.situation or chat.system_prompt
+            situation = request.situation or chat.system_prompt or ""
             messages.append(
                 {
                     "role": "system",
@@ -121,7 +127,7 @@ async def update_chat(
 
 
 @router.get(path="/chat", description="获取先前的对话记录")
-async def get_chat(chat_id: str = Query()):
+async def get_chat(chat_id: str):
     try:
         messages = get_messages_and_analyses(chat_id)
     except Exception as e:

@@ -1,4 +1,11 @@
-from .model import User, Chat, Message, MessageAnalysis, ChatAnalysis, DifficultyAdjustment
+from .model import (
+    User,
+    Chat,
+    Message,
+    MessageAnalysis,
+    ChatAnalysis,
+    DifficultyAdjustment,
+)
 
 __all__ = [
     "User",

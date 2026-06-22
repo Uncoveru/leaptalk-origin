@@ -1,9 +1,26 @@
 def prompt_for_analyzer_grammar(level: dict | None = None) -> str:
-    level_desc = f"{level['cn_name']}({level['cefr_level']} {level['en_name']})" if level else "B1 进阶级"
-    vocab_instr = level["llm_instructions"]["vocabulary"] if level else "使用3000-4000词级别的中阶词汇。"
-    grammar_instr = level["llm_instructions"]["grammar"] if level else "熟练掌握各种基础时态，能正确使用被动语态、定语从句和宾语从句。"
+    level_desc = (
+        f"{level['cn_name']}({level['cefr_level']} {level['en_name']})"
+        if level
+        else "B1 进阶级"
+    )
+    vocab_instr = (
+        level["llm_instructions"]["vocabulary"]
+        if level
+        else "使用3000-4000词级别的中阶词汇。"
+    )
+    grammar_instr = (
+        level["llm_instructions"]["grammar"]
+        if level
+        else "熟练掌握各种基础时态，能正确使用被动语态、定语从句和宾语从句。"
+    )
     strictness = level["assessment_config"]["grammar_strictness"] if level else "medium"
-    strictness_cn = {"low": "宽松", "medium": "适中", "high": "严格", "strict": "非常严格"}.get(strictness, "适中")
+    strictness_cn = {
+        "low": "宽松",
+        "medium": "适中",
+        "high": "严格",
+        "strict": "非常严格",
+    }.get(strictness, "适中")
     return (
         "- Role: 英语口语教学专家\n"
         "- Profile: 你是一位资深英语口语教学专家，擅长针对不同CEFR水平的学生提供个性化的语法和词汇分析。\n"

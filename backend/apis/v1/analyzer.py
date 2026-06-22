@@ -17,7 +17,6 @@ from prompts.analyzer import (
     prompt_for_analyzer_grammar,
     prompt_for_analyzer_pronunciation,
     prompt_for_translate,
-    prompt_for_global_analyze,
 )
 from schemas.analyzer import (
     AnalyzeGrammarRequest,
@@ -26,7 +25,6 @@ from schemas.analyzer import (
     GlobalAnalysisResponse,
     AnalysisSaveRequest,
     TranslateRequest,
-    TranslateResponse,
 )
 from services.docx_generate import generate_docx_report
 from services.global_analyzer import get_messages_and_analyses, global_analyze_stream
@@ -105,7 +103,7 @@ async def save_analysis(request: AnalysisSaveRequest):
             pronunciation_analysis=request.pron_analysis,
         )
         if request.pron_score is not None:
-            message_analysis.pron_score = json.dumps(
+            message_analysis.pronunciation_score = json.dumps(
                 request.pron_score, indent=0, ensure_ascii=False
             )
         session.add(message_analysis)
@@ -139,11 +137,14 @@ async def analyse_summarize(chat_id: str):
 
         # 已有缓存，直接以流式返回 JSON 字符串
         if chat.analysis:
-            cached = json.dumps({
-                "grammar_analysis": chat.analysis.grammar_analysis,
-                "pronunciation_analysis": chat.analysis.pronunciation_analysis,
-                "expression_analysis": chat.analysis.expression_analysis,
-            }, ensure_ascii=False)
+            cached = json.dumps(
+                {
+                    "grammar_analysis": chat.analysis.grammar_analysis,
+                    "pronunciation_analysis": chat.analysis.pronunciation_analysis,
+                    "expression_analysis": chat.analysis.expression_analysis,
+                },
+                ensure_ascii=False,
+            )
 
             def yield_cached():
                 yield cached
@@ -152,6 +153,8 @@ async def analyse_summarize(chat_id: str):
 
         messages_reports = get_messages_and_analyses(chat.id)
         situation = chat.system_prompt if chat.mode != 1 else "自由对话"
+        if not situation:
+            situation = "自由对话"
 
     def generate():
         full_text = ""
@@ -176,7 +179,9 @@ async def analyse_summarize(chat_id: str):
                         ChatAnalysis(
                             chat_id=chat_id,
                             grammar_analysis=parsed.get("grammar_analysis", ""),
-                            pronunciation_analysis=parsed.get("pronunciation_analysis", ""),
+                            pronunciation_analysis=parsed.get(
+                                "pronunciation_analysis", ""
+                            ),
                             expression_analysis=parsed.get("expression_analysis", ""),
                             report_path=None,
                         )
@@ -197,7 +202,7 @@ def download_report_docx(chat_id: str):
             raise HTTPException(status_code=404, detail="Chat not found")
 
         analysis = chat.analysis
-        situation = "自由对话" if chat.mode == 1 else chat.system_prompt
+        situation = "自由对话" if chat.mode == 1 else (chat.system_prompt or "自由对话")
         message_reports = get_messages_and_analyses(chat.id)
         global_analysis = GlobalAnalysisResponse(
             grammar_analysis=analysis.grammar_analysis,

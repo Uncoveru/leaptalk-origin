@@ -1,7 +1,19 @@
 def prompt(situation_class: str, level: dict | None = None):
-    level_desc = f"{level['cn_name']}（{level['cefr_level']} {level['en_name']}）" if level else "B1 进阶级"
-    vocab_instr = level["llm_instructions"]["vocabulary"] if level else "使用3000-4000词级别的中阶词汇。"
-    grammar_instr = level["llm_instructions"]["grammar"] if level else "熟练掌握各种基础时态，能正确使用被动语态、定语从句和宾语从句。"
+    level_desc = (
+        f"{level['cn_name']}（{level['cefr_level']} {level['en_name']}）"
+        if level
+        else "B1 进阶级"
+    )
+    vocab_instr = (
+        level["llm_instructions"]["vocabulary"]
+        if level
+        else "使用3000-4000词级别的中阶词汇。"
+    )
+    grammar_instr = (
+        level["llm_instructions"]["grammar"]
+        if level
+        else "熟练掌握各种基础时态，能正确使用被动语态、定语从句和宾语从句。"
+    )
     return f"""- Role: 英语口语教学专家和情景对话设计大师
 - Background: 用户正在开发一款英语口语陪练智能体，需要设计情景对话部分。当前学生难度等级为{level_desc}。
 - Goals: 根据用户提供的大致场景，生成具体、生动、实用且符合{level_desc}水平的口语练习场景。
@@ -15,9 +27,21 @@ def prompt(situation_class: str, level: dict | None = None):
 
 
 def prompt_for_detailed_situation(level: dict | None = None) -> str:
-    level_desc = f"{level['cn_name']}（{level['cefr_level']} {level['en_name']}）" if level else "B1 进阶级"
-    vocab_instr = level["llm_instructions"]["vocabulary"] if level else "使用3000-4000词级别的中阶词汇。"
-    grammar_instr = level["llm_instructions"]["grammar"] if level else "熟练掌握各种基础时态，能正确使用被动语态、定语从句和宾语从句。"
+    level_desc = (
+        f"{level['cn_name']}（{level['cefr_level']} {level['en_name']}）"
+        if level
+        else "B1 进阶级"
+    )
+    vocab_instr = (
+        level["llm_instructions"]["vocabulary"]
+        if level
+        else "使用3000-4000词级别的中阶词汇。"
+    )
+    grammar_instr = (
+        level["llm_instructions"]["grammar"]
+        if level
+        else "熟练掌握各种基础时态，能正确使用被动语态、定语从句和宾语从句。"
+    )
     return f"""- Role: 场景生成专家
 - Background: 用户正在开发一个情景对话英语口语训练智能体，需要从大场景中生成具体场景。当前学生难度等级为{level_desc}。
 - Goals: 根据用户提供的大场景，生成一个具体场景，确保该场景符合{level_desc}的难度要求。

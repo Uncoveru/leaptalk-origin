@@ -4,6 +4,7 @@
 总结模型: ChatAnalysis (整场对话总结)
 用户模型: User → DifficultyAdjustment (难度调整审计)
 """
+
 from uuid_utils import uuid7
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
@@ -38,78 +39,99 @@ class User(Base):
 
     # ── 主键 ──
     id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False), primary_key=True,
+        UUID(as_uuid=False),
+        primary_key=True,
         default=lambda: str(uuid7()),  # UUID7 时间有序，索引友好
     )
 
     # ── 认证 ──
     email: Mapped[str] = mapped_column(
-        String(255), unique=True, nullable=False,
+        String(255),
+        unique=True,
+        nullable=False,
         doc="登录凭据 + 密码重置渠道",
     )
     password_hash: Mapped[str] = mapped_column(
-        String(128), nullable=False,
+        String(128),
+        nullable=False,
         doc="bcrypt / pbkdf2 哈希，永不存明文",
     )
 
     # ── 身份 ──
     display_name: Mapped[str] = mapped_column(
-        String(64), nullable=False,
+        String(64),
+        nullable=False,
         doc="UI 显示名，允许重复，可随时修改",
     )
     role: Mapped[str] = mapped_column(
-        String(16), nullable=False, default="student",
+        String(16),
+        nullable=False,
+        default="student",
         doc="student | teacher | admin，目前仅用 student",
     )
     is_active: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=True,
+        Boolean,
+        nullable=False,
+        default=True,
         doc="软删除 / 封禁标记，false = 禁止登录",
     )
 
     # ── 学习画像（核心维度）──
     education_level: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="UNDERGRADUATE",
+        String(20),
+        nullable=False,
+        default="UNDERGRADUATE",
         doc="JUNIOR_HIGH | SENIOR_HIGH | UNDERGRADUATE | GRADUATE | PROFESSIONAL"
-             "—— 决定场景知识背景（校园→职场），与 vocabulary_level 正交",
+        "—— 决定场景知识背景（校园→职场），与 vocabulary_level 正交",
     )
     vocabulary_level: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="CET-4",
+        String(20),
+        nullable=False,
+        default="CET-4",
         doc="CET-4 | CET-6 | GRADUATE —— 控制 LLM 词汇复杂度、句式结构",
     )
 
     # ── 扩展偏好（JSON 容器）──
     settings: Mapped[dict] = mapped_column(
-        JSONB, nullable=False, default=dict,
+        JSONB,
+        nullable=False,
+        default=dict,
         doc="存放弱约束、实验性、不参与查询的偏好: "
-            "{ grammar_strictness: 0.6, pronunciation_strictness: 0.7, "
-            "fluency_strictness: 0.6, response_speed: 'slow'|'normal'|'fast', "
-            "preferred_topics: ['daily','travel'], auto_adjust: false }",
+        "{ grammar_strictness: 0.6, pronunciation_strictness: 0.7, "
+        "fluency_strictness: 0.6, response_speed: 'slow'|'normal'|'fast', "
+        "preferred_topics: ['daily','travel'], auto_adjust: false }",
     )
 
     # ── 审计 ──
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False,
+        DateTime(timezone=True),
+        nullable=False,
         default=lambda: datetime.now(tz=CST),
         doc="注册时间",
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False,
+        DateTime(timezone=True),
+        nullable=False,
         default=lambda: datetime.now(tz=CST),
         onupdate=lambda: datetime.now(tz=CST),
         doc="信息最后修改时间，每次 UPDATE 自动刷新",
     )
     last_login_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True, default=None,
+        DateTime(timezone=True),
+        nullable=True,
+        default=None,
         doc="末次登录时间，NULL = 注册后未登录过",
     )
 
     # ── 关系 ──
     chats: Mapped[List["Chat"]] = relationship(
-        back_populates="user", cascade="all, delete-orphan",
+        back_populates="user",
+        cascade="all, delete-orphan",
         doc="用户的所有对话，删用户时级联删除",
     )
     difficulty_adjustments: Mapped[List["DifficultyAdjustment"]] = relationship(
-        back_populates="user", cascade="all, delete-orphan",
+        back_populates="user",
+        cascade="all, delete-orphan",
         doc="难度调整历史记录",
     )
 
@@ -121,7 +143,8 @@ class Chat(Base):
     __tablename__ = "chat"
 
     id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False), primary_key=True,
+        UUID(as_uuid=False),
+        primary_key=True,
         default=lambda: str(uuid7()),
     )
     mode: Mapped[int] = mapped_column(
@@ -133,7 +156,8 @@ class Chat(Base):
         doc="场景描述文本 —— TODO 将改为 background_prompt，仅存纯场景描述",
     )
     level: Mapped[str] = mapped_column(
-        String(4), default="B1",
+        String(4),
+        default="B1",
         doc="CEFR 难度等级: A1 | A2 | B1 | B2 | C1 | C2 —— 控制 LLM 回复的词汇和句式复杂度",
     )
     user_id: Mapped[str] = mapped_column(
@@ -141,17 +165,21 @@ class Chat(Base):
         doc="所属用户，删用户时级联删除对话",
     )
     created: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(tz=CST),
+        DateTime,
+        default=lambda: datetime.now(tz=CST),
         doc="对话创建时间 —— TODO 将改为 start_time",
     )
 
     user: Mapped["User"] = relationship(back_populates="chats")
     analysis: Mapped["ChatAnalysis"] = relationship(
-        back_populates="chat", uselist=False, cascade="all, delete-orphan",
+        back_populates="chat",
+        uselist=False,
+        cascade="all, delete-orphan",
         doc="整场对话总结报告，一对一",
     )
     messages: Mapped[List["Message"]] = relationship(
-        back_populates="chat", cascade="all, delete-orphan",
+        back_populates="chat",
+        cascade="all, delete-orphan",
         doc="对话中的所有消息，删对话时级联删除",
     )
 
@@ -163,7 +191,8 @@ class Message(Base):
     __tablename__ = "message"
 
     id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False), primary_key=True,
+        UUID(as_uuid=False),
+        primary_key=True,
         default=lambda: str(uuid7()),
     )
     chat_id: Mapped[str] = mapped_column(
@@ -185,7 +214,9 @@ class Message(Base):
 
     chat: Mapped["Chat"] = relationship(back_populates="messages")
     analysis: Mapped["MessageAnalysis"] = relationship(
-        back_populates="message", uselist=False, cascade="all, delete-orphan",
+        back_populates="message",
+        uselist=False,
+        cascade="all, delete-orphan",
         doc="本条消息的评测结果，一对一",
     )
 
@@ -197,7 +228,8 @@ class MessageAnalysis(Base):
     __tablename__ = "message_analysis"
 
     id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False), primary_key=True,
+        UUID(as_uuid=False),
+        primary_key=True,
         default=lambda: str(uuid7()),
     )
     message_id: Mapped[str] = mapped_column(
@@ -213,7 +245,8 @@ class MessageAnalysis(Base):
         doc="LLM 发音分析文字反馈（音素准确度、重音、连读等）",
     )
     pronunciation_score: Mapped[Optional[str]] = mapped_column(
-        Text, nullable=True,
+        Text,
+        nullable=True,
         doc="[旧] 发音评分文字 —— TODO 将被 grammar_score / pronunciation_score / fluency_score 三个 Float 替代",
     )
 
@@ -227,7 +260,8 @@ class ChatAnalysis(Base):
     __tablename__ = "chat_analysis"
 
     id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False), primary_key=True,
+        UUID(as_uuid=False),
+        primary_key=True,
         default=lambda: str(uuid7()),
     )
     chat_id: Mapped[str] = mapped_column(
@@ -247,7 +281,8 @@ class ChatAnalysis(Base):
         doc="[旧] 表达地道性总结 —— TODO 将被 summary_report JSON 替代",
     )
     report_path: Mapped[Optional[str]] = mapped_column(
-        Text, nullable=True,
+        Text,
+        nullable=True,
         doc="生成的 Word 报告文件路径",
     )
 
@@ -262,33 +297,39 @@ class DifficultyAdjustment(Base):
     每次 vocabulary_level / grammar_strictness / ... 发生变化时写入一条。
     支持事后追溯"系统为什么给我调了难度"。
     """
+
     __tablename__ = "difficulty_adjustment"
-    __table_args__ = (
-        Index("ix_adj_user_created", "user_id", "created_at"),
-    )
+    __table_args__ = (Index("ix_adj_user_created", "user_id", "created_at"),)
 
     id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False), primary_key=True,
+        UUID(as_uuid=False),
+        primary_key=True,
         default=lambda: str(uuid7()),
     )
     user_id: Mapped[str] = mapped_column(
-        ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True,
+        ForeignKey("user.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
         doc="所属用户",
     )
     triggered_by: Mapped[str] = mapped_column(
-        String(16), nullable=False,
+        String(16),
+        nullable=False,
         doc="SYSTEM = 系统自动 | MANUAL = 用户手动 | TEST_RESULT = 测试结束触发 | ADMIN = 教师后台",
     )
     field: Mapped[str] = mapped_column(
-        String(32), nullable=False,
+        String(32),
+        nullable=False,
         doc="被调整的字段名，如 vocabulary_level / grammar_strictness",
     )
     old_value: Mapped[Optional[str]] = mapped_column(
-        String(50), nullable=True,
+        String(50),
+        nullable=True,
         doc="旧值，NULL = 首次设定",
     )
     new_value: Mapped[str] = mapped_column(
-        String(50), nullable=False,
+        String(50),
+        nullable=False,
         doc="新值",
     )
     confidence: Mapped[Optional[float]] = mapped_column(
@@ -296,11 +337,13 @@ class DifficultyAdjustment(Base):
         doc="系统自动调整时的置信度 (0~1)，手动调整为 NULL",
     )
     evidence: Mapped[Optional[dict]] = mapped_column(
-        JSONB, nullable=True,
+        JSONB,
+        nullable=True,
         doc="调整依据的快照: { sample_size, avg_score, window_days, ci_lower }",
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False,
+        DateTime(timezone=True),
+        nullable=False,
         default=lambda: datetime.now(tz=CST),
         doc="调整发生时间",
     )

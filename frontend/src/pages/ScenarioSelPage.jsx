@@ -25,7 +25,7 @@ const ScenarioSelPage = () => {
       try {
         const data = await getSituation();
         setSituations(data);
-      } catch (error) {
+      } catch {
         message.error("获取场景列表失败！");
       }
     }
@@ -43,7 +43,7 @@ const ScenarioSelPage = () => {
       setDetailedSituation(data);
       setStep(2);
       message.success("场景加载成功！");
-    } catch (error) {
+    } catch {
       message.error("获取场景详情失败！");
     } finally {
       setLoadingDetail(false);

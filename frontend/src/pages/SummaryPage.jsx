@@ -30,7 +30,7 @@ export function SummaryPage() {
       setLoading(true);
       try {
         const chatRes = await getChat(chatId);
-        setMessages(chatRes.messages || []);
+        setMessages(chatRes?.messages || []);
       } catch (e) {
         setError(e.message || "获取对话记录失败");
         setLoading(false);
