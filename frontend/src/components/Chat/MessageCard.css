@@ -43,7 +43,7 @@
 }
 
 .analysis-panel {
-  max-width: 100%;
+  width: 100%;
   margin-top: 6px;
   background: #f6ffed;
   border-radius: 10px;
@@ -52,7 +52,17 @@
 
 .typing-dots {
   display: inline-block;
-  animation: pulse 1.4s ease-in-out infinite;
+  animation: typingPulse 1.4s ease-in-out infinite;
   font-size: 18px;
   letter-spacing: 2px;
+}
+
+@keyframes typingPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typing-dots { animation: none; }
+  .message-row { animation: none; }
 }

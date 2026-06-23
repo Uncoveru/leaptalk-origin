@@ -17,7 +17,7 @@ export function ChatView({ messages }) {
   return (
     <>
     <TranslationPopup />
-    <Flex className="scrollable-content" vertical>
+    <Flex className="scrollable-content" vertical role="log" aria-live="polite">
       {messages.length === 0 ? (
         <Flex
           vertical

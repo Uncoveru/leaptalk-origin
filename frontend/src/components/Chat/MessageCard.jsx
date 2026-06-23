@@ -8,53 +8,65 @@ const { Text } = Typography;
 export function MessageCard({ type, message, analysis }) {
   const [showAnalysis, setShowAnalysis] = useState(false);
 
-  const hasAnalysis = analysis && (analysis.grammar || analysis.pronunciation);
-  const analysisLoading = analysis && !analysis.grammar && !analysis.pronunciation;
+  const hasGrammar = analysis?.grammar_analysis;
+  const hasPronunciation = analysis?.pronunciation_analysis;
+  const analysisLoading = analysis && !hasGrammar && !hasPronunciation;
+
+  let buttonLabel = "查看分析";
+  if (analysisLoading) buttonLabel = "分析中...";
+  else if (!analysis) buttonLabel = null;
 
   if (type === "user") {
+    if (!message) return null;
+
     return (
       <Flex
         justify="flex-end"
         align="start"
         className="message-row"
       >
-        <Flex vertical align="flex-end" style={{ maxWidth: "70%" }}>
-          <Card className="user-message" bodyStyle={{ padding: "10px 14px" }}>
+        <Flex vertical align="flex-end" style={{ width: "70%" }}>
+          <Card className="user-message" styles={{ body: { padding: "10px 14px" } }}>
             <Text style={{ fontSize: 15 }}>{message}</Text>
           </Card>
 
-          <Button
-            type="text"
-            icon={showAnalysis ? <DownOutlined /> : <UpOutlined />}
-            onClick={() => setShowAnalysis(!showAnalysis)}
-            className="analysis-button"
-          >
-            {analysisLoading ? "分析中..." : "分析"}
-          </Button>
+          {buttonLabel && (
+            <Button
+              type="text"
+              icon={showAnalysis ? <DownOutlined /> : <UpOutlined />}
+              onClick={() => setShowAnalysis(!showAnalysis)}
+              disabled={analysisLoading}
+              className="analysis-button"
+            >
+              {buttonLabel}
+            </Button>
+          )}
 
           {showAnalysis && (
-            <Card className="analysis-panel" bodyStyle={{ padding: "12px 14px" }}>
+            <Card className="analysis-panel" styles={{ body: { padding: "12px 14px" } }}>
               {analysisLoading ? (
                 <div style={{ textAlign: "center", padding: 8 }}>
                   <Spin size="small" /> <Text type="secondary">分析中...</Text>
                 </div>
-              ) : hasAnalysis ? (
-                <Space direction="vertical" size="small" style={{ width: "100%" }}>
-                  {analysis.grammar && (
-                    <div>
-                      <Text strong style={{ color: "#fa8c16" }}>语法: </Text>
-                      <Text style={{ fontSize: 13 }}>{analysis.grammar}</Text>
-                    </div>
-                  )}
-                  {analysis.pronunciation?.pronAnalysis && (
-                    <div>
-                      <Text strong style={{ color: "#1677ff" }}>发音: </Text>
-                      <Text style={{ fontSize: 13 }}>{analysis.pronunciation.pronAnalysis}</Text>
-                    </div>
-                  )}
-                </Space>
               ) : (
-                <Text type="secondary" style={{ fontSize: 13 }}>暂无分析结果</Text>
+                <Space direction="vertical" size="small" style={{ width: "100%" }}>
+                  <div>
+                    <Text strong style={{ color: "#fa8c16" }}>语法: </Text>
+                    {hasGrammar ? (
+                      <Text style={{ fontSize: 13 }}>{analysis.grammar_analysis}</Text>
+                    ) : (
+                      <><Spin size="small" /> <Text type="secondary" style={{ fontSize: 13 }}>分析中...</Text></>
+                    )}
+                  </div>
+                  <div>
+                    <Text strong style={{ color: "#1677ff" }}>发音: </Text>
+                    {hasPronunciation ? (
+                      <Text style={{ fontSize: 13 }}>{analysis.pronunciation_analysis}</Text>
+                    ) : (
+                      <><Spin size="small" /> <Text type="secondary" style={{ fontSize: 13 }}>分析中...</Text></>
+                    )}
+                  </div>
+                </Space>
               )}
             </Card>
           )}
@@ -77,7 +89,7 @@ export function MessageCard({ type, message, analysis }) {
           style={{ backgroundColor: "#1677ff" }}
         />
         <Flex vertical align="flex-start" style={{ maxWidth: "70%" }}>
-          <Card className="assistant-message" bodyStyle={{ padding: "10px 14px" }}>
+          <Card className="assistant-message" styles={{ body: { padding: "10px 14px" } }}>
             <Text style={{ fontSize: 15 }}>
               {message || <span className="typing-dots">...</span>}
             </Text>

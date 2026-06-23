@@ -22,11 +22,20 @@ export function TranslationPopup() {
 
     const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top - 8;
+
+    let x = rect.left + rect.width / 2;
+    let y = rect.top - 8;
+    let showAbove = true;
+
+    if (y < 60) {
+      y = rect.bottom + 8;
+      showAbove = false;
+    }
+
+    x = Math.max(8, Math.min(x, window.innerWidth - 8));
 
     abortRef.current = false;
-    setPopup({ x, y, word, data: {}, loading: true });
+    setPopup({ x, y, word, data: {}, loading: true, showAbove });
 
     try {
       await translateText(word, (partial) => {
@@ -61,14 +70,16 @@ export function TranslationPopup() {
 
   if (!popup) return null;
 
-  const { data, loading, word, x, y } = popup;
+  const { data, loading, word, x, y, showAbove } = popup;
   const hasAny = data && Object.keys(data).length > 0;
+
+  const transform = showAbove ? "translate(-50%, -100%)" : "translate(-50%, 0)";
 
   const style = {
     position: "fixed",
     left: x,
     top: y,
-    transform: "translate(-50%, -100%)",
+    transform,
     zIndex: 9999,
     minWidth: 200,
     maxWidth: 300,
@@ -78,7 +89,7 @@ export function TranslationPopup() {
   };
 
   return (
-    <Card ref={popupRef} style={style} bodyStyle={{ padding: "12px 14px" }}>
+    <Card ref={popupRef} style={style} styles={{ body: { padding: "12px 14px" } }}>
       {/* header: word + phonetic + pos always visible once card opens */}
       <div style={{ marginBottom: 4, display: "flex", alignItems: "baseline", gap: 4 }}>
         <Text strong style={{ fontSize: 15 }}>{word}</Text>

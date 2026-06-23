@@ -66,8 +66,12 @@ export default function HomePage() {
               <Card
                 hoverable
                 style={{ height: "100%", borderRadius: 12, textAlign: "center" }}
-                bodyStyle={{ padding: "32px 24px" }}
+                styles={{ body: { padding: "32px 24px" } }}
                 onClick={f.onClick}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") f.onClick(); }}
+                tabIndex={0}
+                role="button"
+                aria-label={f.title}
               >
                 <div style={{ marginBottom: 16 }}>{f.icon}</div>
                 <Title level={3} style={{ marginBottom: 8 }}>

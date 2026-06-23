@@ -1,6 +1,7 @@
 import React from "react";
 import { Button, Flex, Typography, Space } from "antd";
 import { AudioOutlined, SendOutlined, RedoOutlined, PauseCircleOutlined } from "@ant-design/icons";
+import "./MessageInput.css";
 
 const { Text } = Typography;
 
@@ -30,6 +31,7 @@ export function MessageInput({
             textAlign: "center",
             minHeight: 36,
           }}
+          aria-live="polite"
         >
           <Text style={{ fontSize: 15, color: "#333" }}>
             {transcriptionResult}
@@ -88,22 +90,6 @@ export function MessageInput({
           </Button>
         </Space>
       )}
-
-      <style>{`
-        .recording-indicator {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 8px;
-        }
-        .recording-dot {
-          width: 10px;
-          height: 10px;
-          background: #ff4d4f;
-          border-radius: 50%;
-          animation: pulse 1s ease-in-out infinite;
-        }
-      `}</style>
     </Flex>
   );
 }

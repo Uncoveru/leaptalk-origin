@@ -10,6 +10,8 @@ export function ChatInfoPanel({ chatInfo, onClose, onSummarize, view, onSetView 
     <Flex
       justify="space-between"
       align="center"
+      wrap="wrap"
+      gap={4}
       style={{
         width: "100%",
         padding: "8px 0",

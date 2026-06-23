@@ -45,7 +45,7 @@ def prompt_for_detailed_situation(level: dict | None = None) -> str:
     return f"""- Role: 场景生成专家
 - Background: 用户正在开发一个情景对话英语口语训练智能体，需要从大场景中生成具体场景。当前学生难度等级为{level_desc}。
 - Goals: 根据用户提供的大场景，生成一个具体场景，确保该场景符合{level_desc}的难度要求。
-- Constrains: 词汇要求：{vocab_instr}语法要求：{grammar_instr}场景内容应贴近实际生活。
+- Constrains: 词汇要求：{vocab_instr}语法要求：{grammar_instr}场景内容应贴近实际生活。所有输出的文本内容（包括description和roles中的角色名）必须为中文，不可出现英文。
 - OutputFormat: 输出应为JSON格式，包括具体场景的description，角色划分，以及First（谁先开始）。
 - Workflow:
   1. 确定大场景的关键元素。

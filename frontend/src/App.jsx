@@ -1,10 +1,10 @@
 import React from "react";
 import {BrowserRouter as Router, Route, Routes} from "react-router-dom";
-import HomePage from "./pages/HomePage";
-import ChatPage from "@/pages/ChatPage.jsx";
+import HomePage from "@/pages/HomePage";
+import ChatPage from "@/pages/ChatPage";
 import ScenarioSelPage from "@/pages/ScenarioSelPage";
-import SummaryPage from "@/pages/SummaryPage.jsx";
-import {ErrorBoundary} from "@/components/Common/ErrorBoundary.jsx";
+import SummaryPage from "@/pages/SummaryPage";
+import {ErrorBoundary} from "@/components/Common/ErrorBoundary";
 
 function App() {
   return (

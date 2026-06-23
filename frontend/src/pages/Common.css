@@ -1,6 +1,6 @@
 .layoutRoot {
   height: 100vh;
-  width: 100vw;
+  width: 100%;
   background: linear-gradient(135deg, #f0f5ff 0%, #e6fffb 100%);
   display: flex;
   align-items: center;
@@ -8,9 +8,8 @@
 }
 
 .contentBox {
-  /* 把原来的 width: 70vw; max-width: 1000px; 删掉或改掉 */
-  width: 100%; /* 自适应父级 Content 的宽度 */
-  max-width: 1000px; /* 确保不超过外层 Content 限制的 800px */
+  width: 100%;
+  max-width: 1000px;
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
@@ -19,8 +18,17 @@
   flex-direction: column;
   gap: 24px;
   overflow-y: auto;
-  margin: 24px auto; /* 虽然在 flex 居中下 margin auto 作用有限，但保留无害 */
+  margin: 24px auto;
   animation: fadeInUp 0.4s ease-out;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contentBox { animation: none; }
 }
 
 .contentBox::-webkit-scrollbar {
@@ -30,4 +38,9 @@
 .contentBox::-webkit-scrollbar-thumb {
   background: #d9d9d9;
   border-radius: 3px;
+}
+
+.contentBox {
+  scrollbar-width: thin;
+  scrollbar-color: #d9d9d9 transparent;
 }

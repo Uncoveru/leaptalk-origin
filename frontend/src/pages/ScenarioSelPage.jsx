@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getSituation, createDetailedSituation } from "../apis/situation";
+import { getSituation, createDetailedSituation } from "@/apis/situation";
 import { useNavigate } from "react-router-dom";
 import { Card, Button, Radio, Typography, message, Layout, Steps, Spin, Flex, Space, Tag } from "antd";
 import { ArrowLeftOutlined, CheckCircleOutlined } from "@ant-design/icons";
@@ -155,17 +155,21 @@ const ScenarioSelPage = () => {
                     <div
                       key={index}
                       onClick={() => setSelectedIndex(index)}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setSelectedIndex(index); }}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={situation.name_zh}
                       style={{
                         padding: "14px 16px",
                         marginBottom: 8,
                         borderRadius: 10,
                         cursor: "pointer",
-                        border: selectedIndex === index ? "2px solid #1677ff" : "1px solid #f0f0f0",
+                        border: selectedIndex === index ? "1px solid #1677ff" : "1px solid #f0f0f0",
                         background: selectedIndex === index ? "#e6f4ff" : "#fff",
                         transition: "all 0.2s ease",
                       }}
                     >
-                      <Radio checked={selectedIndex === index} style={{ fontSize: 15 }}>
+                      <Radio checked={selectedIndex === index} style={{ fontSize: 15, pointerEvents: "none" }}>
                         <span style={{ fontWeight: 500 }}>{situation.name_zh}</span>
                         <span style={{ color: "#8c8c8c", marginLeft: 8 }}>{situation.name_en}</span>
                       </Radio>

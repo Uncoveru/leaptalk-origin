@@ -1,6 +1,6 @@
 import React from "react";
 import { Button, Flex, Typography } from "antd";
-import { PauseCircleOutlined, PlayCircleOutlined } from "@ant-design/icons";
+import { PauseCircleOutlined, PlayCircleOutlined, AudioOutlined, RobotOutlined } from "@ant-design/icons";
 import "./VoiceView.css";
 
 const { Text, Title } = Typography;
@@ -19,14 +19,14 @@ export function VoiceView({ role, text, paused, setPaused, onPaused }) {
   return (
     <Flex vertical align="center" justify="center" className="voice-container">
       <div className={`voice-avatar ${isUser ? "voice-avatar-user" : "voice-avatar-ai"} ${paused ? "" : "voice-avatar-speaking"}`}>
-        <span className="voice-avatar-emoji">{isUser ? "🎤" : "🤖"}</span>
+        <span className="voice-avatar-emoji">{isUser ? <AudioOutlined /> : <RobotOutlined />}</span>
       </div>
 
       <Text type="secondary" className="voice-role-label">
         {isUser ? "你正在说" : "AI 正在说"}
       </Text>
 
-      <div className="voice-text-area">
+      <div className="voice-text-area" aria-live="polite">
         <Text className="voice-text-content">
           {text || (isUser ? "开始说话..." : "等待回复...")}
         </Text>

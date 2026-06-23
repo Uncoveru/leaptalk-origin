@@ -111,32 +111,21 @@ async function translateText(text, onUpdate) {
   }
 }
 
-async function analyzeSummarize(chatId, onUpdate) {
-  const url = hostAddr + `/analysis/summarize?chat_id=${encodeURIComponent(chatId)}`;
-
-  const response = await fetch(url, { method: "GET" });
-  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder("utf-8");
-
+function createIncrementalParser(onUpdate) {
   const fields = ["grammar_analysis", "pronunciation_analysis", "expression_analysis"];
-  let accumulated = "";   // 用于最终解析
+  let accumulated = "";
   let currentField = null;
   let fieldValue = "";
   let inValue = false;
   let escaping = false;
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    const chunk = decoder.decode(value, { stream: true });
+  return function feed(rawText) {
+    const newChars = rawText.slice(accumulated.length);
 
-    for (const char of chunk) {
+    for (const char of newChars) {
       accumulated += char;
 
       if (!inValue) {
-        // 检测字段起始标记
         for (const field of fields) {
           if (
             accumulated.endsWith(`"${field}": "`) ||
@@ -149,7 +138,6 @@ async function analyzeSummarize(chatId, onUpdate) {
           }
         }
       } else {
-        // 在字段值内部逐字符处理
         if (escaping) {
           if (char === "n") fieldValue += "\n";
           else if (char === '"') fieldValue += '"';
@@ -157,67 +145,95 @@ async function analyzeSummarize(chatId, onUpdate) {
           else if (char === "t") fieldValue += "\t";
           else fieldValue += char;
           escaping = false;
-          onUpdate({ [currentField]: fieldValue });
         } else if (char === "\\") {
           escaping = true;
         } else if (char === '"') {
-          // 字段值结束
           inValue = false;
           currentField = null;
         } else {
           fieldValue += char;
+        }
+        if (currentField) {
           onUpdate({ [currentField]: fieldValue });
         }
       }
     }
-  }
+  };
+}
 
-  try {
-    return JSON.parse(accumulated);
-  } catch {
-    return null;
+async function analyzeSummarize(chatId, onUpdate) {
+  const url = hostAddr + `/analysis/summarize?chat_id=${encodeURIComponent(chatId)}`;
+
+  const response = await fetch(url, { method: "GET" });
+  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+  const feed = createIncrementalParser(onUpdate);
+
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    const parts = buffer.split("\n\n");
+    buffer = parts.pop() || "";
+
+    for (const part of parts) {
+      if (!part) continue;
+
+      const dataLines = [];
+      for (const line of part.split("\n")) {
+        if (line.startsWith("data: ")) {
+          dataLines.push(line.slice(6));
+        } else if (line.startsWith("data:")) {
+          dataLines.push(line.slice(5));
+        }
+      }
+      if (dataLines.length === 0) continue;
+
+      try {
+        const parsed = JSON.parse(dataLines.join("\n"));
+        if (parsed && typeof parsed.error === "string") {
+          throw new Error(parsed.error);
+        }
+        if (typeof parsed === "string") {
+          feed(parsed);
+        }
+      } catch (e) {
+        if (e.message && !e.message.startsWith("Unexpected")) {
+          throw e;
+        }
+      }
+    }
   }
 }
 
 async function downloadReportDocx(chatId) {
-  try {
-    // 构造 API 请求 URL
-    const apiUrl = hostAddr + `/analysis/summarize/docx?chat_id=${chatId}`;
+  const apiUrl = hostAddr + `/analysis/summarize/docx?chat_id=${chatId}`;
 
-    // 发起 GET 请求
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+  const response = await fetch(apiUrl, { method: "GET" });
 
-    // 检查响应状态
-    if (!response.ok) {
-      throw new Error(`Failed to download report: ${response.status} ${response.statusText}`);
-    }
-
-    // 获取文件名
-    const contentDisposition = response.headers.get('content-disposition');
-    const filename = contentDisposition
-      ? contentDisposition.split('filename=')[1].replace(/"/g, '')
-      : 'report.docx';
-
-    // 创建一个 Blob 对象并下载文件
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-
-    console.log('Report downloaded successfully');
-  } catch (error) {
-    console.error('Error downloading report:', error);
+  if (!response.ok) {
+    throw new Error(`Failed to download report: ${response.status} ${response.statusText}`);
   }
+
+  const contentDisposition = response.headers.get("content-disposition");
+  const filename = contentDisposition
+    ? contentDisposition.split("filename=")[1].replace(/"/g, "")
+    : "report.docx";
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
 }
 
 export {analyzeGrammar, analyzePronunciation, saveAnalysis, analyzeSummarize, downloadReportDocx, translateText};

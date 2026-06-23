@@ -17,7 +17,7 @@ async function getUser() {
     const data = await response.json();
     return data.user_id;
   } catch (error) {
-    console.error("Failed to fetch situations:", error);
+    console.error("Failed to fetch user:", error);
     throw error;
   }
 }

@@ -286,7 +286,7 @@ export function ChatPage() {
       const newMessage = {
         role: "user",
         content: transcript,
-        analysis: null,
+        analysis: {},
       };
       const userIndex = messagesLengthRef.current;
       setMessages((prev) => {
@@ -342,73 +342,61 @@ export function ChatPage() {
         }
         resolveAssistantId(null);
       };
-      // 2. 获取分析
+      // 2. 获取分析（并行）
+      const updateAnalysis = (field, value) => {
+        setMessages((prev) => {
+          const updated = [...prev];
+          const oldAnalysis = updated[userIndex].analysis || {};
+          updated[userIndex] = {
+            ...updated[userIndex],
+            analysis: { ...oldAnalysis, [field]: value },
+          };
+          return updated;
+        });
+      };
+
       let grammarResult = null;
       let pronResult = null;
-      try {
-        grammarResult = await analyzeGrammar(transcript, chatInfo.level || "B1");
-        setMessages((prev) => {
-          const updated = [...prev];
-          const oldAnalysis = updated[userIndex].analysis || {};
-          updated[userIndex] = {
-            ...updated[userIndex],
-            analysis: {...oldAnalysis, grammar: grammarResult},
-          };
-          return updated;
-        });
-      } catch {
-        grammarResult = "语法分析失败。";
-        setMessages((prev) => {
-          const updated = [...prev];
-          const oldAnalysis = updated[userIndex].analysis || {};
-          updated[userIndex] = {
-            ...updated[userIndex],
-            analysis: { ...oldAnalysis, grammar: grammarResult },
-          };
-          return updated;
-        });
-      }
 
-      try {
-        pronResult = await analyzePronunciation(
-          transcript,
-          audioBlobRef.current,
-        );
-        setMessages((prev) => {
-          const updated = [...prev];
-          const oldAnalysis = updated[userIndex].analysis || {};
-          updated[userIndex] = {
-            ...updated[userIndex],
-            analysis: { ...oldAnalysis, pronunciation: pronResult },
-          };
-          return updated;
-        });
-      } catch {
-        pronResult = { pronAnalysis: "发音分析失败，请重试。", pronEvaluation: null };
-        setMessages((prev) => {
-          const updated = [...prev];
-          const oldAnalysis = updated[userIndex].analysis || {};
-          updated[userIndex] = {
-            ...updated[userIndex],
-            analysis: { ...oldAnalysis, pronunciation: pronResult },
-          };
-          return updated;
-        });
-      }
+      await Promise.all([
+        analyzeGrammar(transcript, chatInfo.level || "B1")
+          .then((r) => {
+            grammarResult = r;
+            updateAnalysis("grammar_analysis", r);
+          })
+          .catch(() => {
+            updateAnalysis("grammar_analysis", "语法分析失败。");
+          }),
+        (async () => {
+          if (!audioBlobRef.current) {
+            updateAnalysis("pronunciation_analysis", "未录制音频，无法分析发音。");
+            return;
+          }
+          try {
+            const r = await analyzePronunciation(transcript, audioBlobRef.current);
+            pronResult = r;
+            updateAnalysis("pronunciation_analysis", r.pronAnalysis);
+          } catch {
+            updateAnalysis("pronunciation_analysis", "发音分析失败，请重试。");
+          }
+        })(),
+      ]);
 
-      // 4. 上传消息与分析
-      try {
-        const resolvedId = await assistantIdPromise;
-        if (resolvedId) {
-          await saveAnalysis(
-            resolvedId,
-            grammarResult,
-            pronResult?.pronAnalysis || "无",
-            pronResult?.pronEvaluation || null,
-          );
+      // 4. 上传消息与分析（仅当有成功结果时保存）
+      if (grammarResult !== null || pronResult !== null) {
+        try {
+          const resolvedId = await assistantIdPromise;
+          if (resolvedId) {
+            await saveAnalysis(
+              resolvedId,
+              grammarResult ?? "",
+              pronResult?.pronAnalysis ?? "",
+              pronResult?.pronEvaluation ?? null,
+            );
+          }
+        } catch (e) {
+          console.error("保存分析失败", e);
         }
-      } catch (e) {
-        console.error("保存分析失败", e);
       }
       // 5. 后续处理
       resetTranscript();
@@ -418,7 +406,6 @@ export function ChatPage() {
   );
 
   // Voice模式
-  const [_noSpeechCount, setNoSpeechCount] = useState(0);
   const [paused, setPaused] = useState(false); // 是否暂停语音识别
   const [currentVoiceRole, setCurrentVoiceRole] = useState("");
   const [currentVoiceText, setCurrentVoiceText] = useState("");
@@ -442,37 +429,24 @@ export function ChatPage() {
   }, [recordingState, transcript, messages]);
 
   useEffect(() => {
-    console.log("🔄 [Voice Submit Effect] 触发，当前 transcript:", transcript);
-    console.log("条件检查: viewMode =", viewMode, ", recordingState =", recordingState, ", paused =", paused);
-
     if (viewMode !== "voice" || paused || audioPlaying) {
-      console.log("⚠️ 条件不满足，跳过");
       return;
     }
 
-    // 1️⃣ 开始录音（如果处于 idle 状态）
     if (recordingState === "idle") {
       void onStart();
-      console.log("🎙️ 开始录音");
     }
 
-    // 2️⃣ 清除之前的定时器
     if (submitTimerRef.current) {
       clearTimeout(submitTimerRef.current);
       submitTimerRef.current = null;
-      console.log("⏰ 定时器已清除");
     }
 
-    // 3️⃣ 如果 transcript 为空，不设置定时器
     if (!transcript.trim()) {
-      console.log("💬 transcript 为空，暂不设置定时器");
       lastTranscriptRef.current = transcript;
       return;
     }
 
-    console.log("✅ transcript 非空，设置 2 秒提交定时器");
-
-    // 4️⃣ 设置定时器：2秒无更新则提交
     submitTimerRef.current = setTimeout(async () => {
       if (isSubmittingRef.current) {
         return;
@@ -482,7 +456,6 @@ export function ChatPage() {
         isSubmittingRef.current = true;
         submitTimerRef.current = null;
 
-        setNoSpeechCount(0);
         await onStop();
 
         setTimeout(async () => {
@@ -492,15 +465,12 @@ export function ChatPage() {
       }
     }, 2000);
 
-    // 5️⃣ 更新最后一次 transcript
     lastTranscriptRef.current = transcript;
 
-    // 6️⃣ 清理副作用
     return () => {
       if (submitTimerRef.current) {
         clearTimeout(submitTimerRef.current);
         submitTimerRef.current = null;
-        console.log("🧹 定时器已清理");
       }
     };
   }, [
@@ -534,7 +504,6 @@ export function ChatPage() {
   function onPause() {
     // 暂停语音识别
     setPaused(true);
-    setNoSpeechCount(0);
     setRecordingState("idle");
   }
 

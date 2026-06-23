@@ -65,7 +65,11 @@ async def analyze_pronunciation(text: str = Form(), audio: UploadFile = File()):
     async with aiofiles.open(converted_audio_path, mode="wb") as f:
         await f.write(pcm_data)
 
-    pronunciation_evaluation = await evaluate(str(converted_audio_path), text)
+    try:
+        pronunciation_evaluation = await evaluate(str(converted_audio_path), text)
+    finally:
+        converted_audio_path.unlink(missing_ok=True)
+
     if pronunciation_evaluation is None:
         raise HTTPException(status_code=502, detail="语音评测服务暂不可用")
 
@@ -127,7 +131,7 @@ async def translate(request: TranslateRequest):
     return StreamingResponse(content=generate(), media_type="text/plain")
 
 
-@router.get("/analysis/summarize", response_class=StreamingResponse)
+@router.get("/analysis/summarize")
 async def analyse_summarize(chat_id: str):
     with Session(engine) as session:
         chat = session.get(Chat, chat_id)
@@ -135,7 +139,6 @@ async def analyse_summarize(chat_id: str):
         if not chat:
             raise HTTPException(status_code=404, detail="Chat not found")
 
-        # 已有缓存，直接以流式返回 JSON 字符串
         if chat.analysis:
             cached = json.dumps(
                 {
@@ -147,9 +150,16 @@ async def analyse_summarize(chat_id: str):
             )
 
             def yield_cached():
-                yield cached
+                yield f"data: {json.dumps(cached, ensure_ascii=False)}\n\n"
 
-            return StreamingResponse(content=yield_cached(), media_type="text/plain")
+            return StreamingResponse(
+                content=yield_cached(),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache, no-transform",
+                    "X-Accel-Buffering": "no",
+                },
+            )
 
         messages_reports = get_messages_and_analyses(chat.id)
         situation = chat.system_prompt if chat.mode != 1 else "自由对话"
@@ -157,21 +167,20 @@ async def analyse_summarize(chat_id: str):
             situation = "自由对话"
 
     def generate():
-        full_text = ""
+        accumulated = ""
         try:
             for token in global_analyze_stream(
                 system_prompt=situation,
                 message_reports=messages_reports,
             ):
-                full_text += token
-                yield token
+                accumulated += token
+                yield f"data: {json.dumps(accumulated, ensure_ascii=False)}\n\n"
         except Exception as e:
-            yield json.dumps({"error": str(e)}, ensure_ascii=False)
+            yield f"data: {json.dumps({'error': str(e)}, ensure_ascii=False)}\n\n"
             return
 
-        # 流结束后解析并保存
         try:
-            parsed = json.loads(full_text)
+            parsed = json.loads(accumulated)
             with Session(engine) as save_session:
                 chat_obj = save_session.get(Chat, chat_id)
                 if chat_obj and not chat_obj.analysis:
@@ -190,7 +199,14 @@ async def analyse_summarize(chat_id: str):
         except Exception:
             pass
 
-    return StreamingResponse(content=generate(), media_type="text/plain")
+    return StreamingResponse(
+        content=generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.get("/analysis/summarize/docx", response_class=FileResponse)
